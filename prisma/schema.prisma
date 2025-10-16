@@ -1,0 +1,362 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table
+model User {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String   @unique @db.VarChar(255)
+  name                  String?  @db.VarChar(255)
+  passwordHash          String?  @map("password_hash") @db.VarChar(255)
+  emailVerified         Boolean  @default(false) @map("email_verified")
+  avatarUrl             String?  @map("avatar_url") @db.Text
+  provider              String?  @db.VarChar(50)
+  providerId            String?  @map("provider_id") @db.VarChar(255)
+  subscriptionTier      String   @default("free") @map("subscription_tier") @db.VarChar(20)
+  subscriptionStatus    String   @default("active") @map("subscription_status") @db.VarChar(20)
+  subscriptionExpiresAt DateTime? @map("subscription_expires_at") @db.Timestamp(6)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  lastLogin             DateTime? @map("last_login") @db.Timestamp(6)
+  settings              Json     @default("{}") @db.JsonB
+
+  // Relations
+  subscriptions           Subscription[]
+  ownedOrganizations      Organization[]
+  organizationMemberships OrganizationMember[]
+  invitedMembers          OrganizationMember[] @relation("InvitedBy")
+  organizationFolders     OrganizationFolder[]
+  organizationPrompts     OrganizationPrompt[] @relation("OrganizationPromptCreator")
+  updatedOrgPrompts       OrganizationPrompt[] @relation("OrganizationPromptUpdater")
+  folders                 Folder[]
+  tags                    Tag[]
+  prompts                 Prompt[]
+  promptVersions          PromptVersion[]
+  sharedPrompts           PromptShare[]        @relation("SharedBy")
+  receivedShares          PromptShare[]        @relation("SharedWith")
+  comments                Comment[]
+  promptUsage             PromptUsage[]
+  activityLogs            ActivityLog[]
+
+  @@index([email])
+  @@index([provider, providerId])
+  @@index([subscriptionTier, subscriptionStatus])
+  @@map("users")
+}
+
+// Subscriptions table
+model Subscription {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  tier                 String    @db.VarChar(20)
+  status               String    @db.VarChar(20)
+  stripeCustomerId     String?   @map("stripe_customer_id") @db.VarChar(255)
+  stripeSubscriptionId String?   @map("stripe_subscription_id") @db.VarChar(255)
+  currentPeriodStart   DateTime? @map("current_period_start") @db.Timestamp(6)
+  currentPeriodEnd     DateTime? @map("current_period_end") @db.Timestamp(6)
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+  @@map("subscriptions")
+}
+
+// Organizations table
+model Organization {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  avatarUrl   String?  @map("avatar_url") @db.Text
+  ownerId     String   @map("owner_id") @db.Uuid
+  settings    Json     @default("{}") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  owner   User                   @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  members OrganizationMember[]
+  folders OrganizationFolder[]
+  prompts OrganizationPrompt[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@map("organizations")
+}
+
+// Organization members table
+model OrganizationMember {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId  String    @map("organization_id") @db.Uuid
+  userId          String?   @map("user_id") @db.Uuid
+  email           String    @db.VarChar(255)
+  role            String    @db.VarChar(20)
+  status          String    @default("pending") @db.VarChar(20)
+  invitationToken String    @default(dbgenerated("gen_random_uuid()")) @map("invitation_token") @db.Uuid
+  invitedBy       String    @map("invited_by") @db.Uuid
+  invitedAt       DateTime  @default(now()) @map("invited_at") @db.Timestamp(6)
+  acceptedAt      DateTime? @map("accepted_at") @db.Timestamp(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviter      User         @relation("InvitedBy", fields: [invitedBy], references: [id])
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([email])
+  @@index([invitationToken])
+  @@index([status])
+  @@map("organization_members")
+}
+
+// Organization folders table
+model OrganizationFolder {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  parentId       String?   @map("parent_id") @db.Uuid
+  name           String    @db.VarChar(255)
+  description    String?   @db.Text
+  path           String?   @db.Text
+  level          Int       @default(0)
+  createdBy      String    @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent       OrganizationFolder?   @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children     OrganizationFolder[]  @relation("FolderHierarchy")
+  creator      User                  @relation(fields: [createdBy], references: [id])
+  prompts      OrganizationPrompt[]
+
+  @@index([organizationId])
+  @@index([parentId])
+  @@index([path])
+  @@map("organization_folders")
+}
+
+// Organization prompts table
+model OrganizationPrompt {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  folderId       String?   @map("folder_id") @db.Uuid
+  title          String    @db.VarChar(255)
+  description    String?   @db.Text
+  content        String    @db.Text
+  variables      Json      @default("[]") @db.JsonB
+  targetLlm      String?   @map("target_llm") @db.VarChar(50)
+  createdBy      String    @map("created_by") @db.Uuid
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  usageCount     Int       @default(0) @map("usage_count")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  folder       OrganizationFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  creator      User                @relation("OrganizationPromptCreator", fields: [createdBy], references: [id])
+  updater      User?               @relation("OrganizationPromptUpdater", fields: [updatedBy], references: [id])
+
+  @@index([organizationId])
+  @@index([folderId])
+  @@index([createdBy])
+  @@map("organization_prompts")
+}
+
+// Folders table
+model Folder {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  parentId    String?   @map("parent_id") @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  path        String?   @db.Text
+  level       Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[]  @relation("FolderHierarchy")
+  prompts  Prompt[]
+
+  @@index([userId])
+  @@index([parentId])
+  @@index([path])
+  @@map("folders")
+}
+
+// Tags table
+model Tag {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(100)
+  color     String?  @db.VarChar(7)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompts PromptTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+// Prompts table
+model Prompt {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  folderId    String?   @map("folder_id") @db.Uuid
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  content     String    @db.Text
+  variables   Json      @default("[]") @db.JsonB
+  targetLlm   String?   @map("target_llm") @db.VarChar(50)
+  isFavorite  Boolean   @default(false) @map("is_favorite")
+  isDeleted   Boolean   @default(false) @map("is_deleted")
+  privacy     String    @default("private") @db.VarChar(20)
+  usageCount  Int       @default(0) @map("usage_count")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder   Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags     PromptTag[]
+  versions PromptVersion[]
+  shares   PromptShare[]
+  comments Comment[]
+  usage    PromptUsage[]
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([userId, isFavorite])
+  @@index([isDeleted])
+  @@index([privacy])
+  @@map("prompts")
+}
+
+// Prompt tags (many-to-many)
+model PromptTag {
+  promptId String @map("prompt_id") @db.Uuid
+  tagId    String @map("tag_id") @db.Uuid
+
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([promptId, tagId])
+  @@index([promptId])
+  @@index([tagId])
+  @@map("prompt_tags")
+}
+
+// Prompt versions
+model PromptVersion {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId        String   @map("prompt_id") @db.Uuid
+  versionNumber   Int      @map("version_number")
+  title           String   @db.VarChar(255)
+  content         String   @db.Text
+  variables       Json?    @db.JsonB
+  changesSummary  String?  @map("changes_summary") @db.Text
+  annotation      String?  @db.Text
+  isSnapshot      Boolean  @default(false) @map("is_snapshot")
+  createdBy       String   @map("created_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  prompt  Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdBy], references: [id])
+
+  @@unique([promptId, versionNumber])
+  @@index([promptId, versionNumber(sort: Desc)])
+  @@map("prompt_versions")
+}
+
+// Prompt sharing
+model PromptShare {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId   String    @map("prompt_id") @db.Uuid
+  sharedBy   String    @map("shared_by") @db.Uuid
+  sharedWith String?   @map("shared_with") @db.Uuid
+  shareToken String    @default(dbgenerated("gen_random_uuid()")) @map("share_token") @db.Uuid
+  permission String    @db.VarChar(20)
+  expiresAt  DateTime? @map("expires_at") @db.Timestamp(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+
+  prompt   Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  sharer   User   @relation("SharedBy", fields: [sharedBy], references: [id], onDelete: Cascade)
+  receiver User?  @relation("SharedWith", fields: [sharedWith], references: [id], onDelete: Cascade)
+
+  @@index([sharedWith])
+  @@index([shareToken])
+  @@index([promptId])
+  @@map("prompt_shares")
+}
+
+// Comments
+model Comment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId  String   @map("prompt_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  parentId  String?  @map("parent_id") @db.Uuid
+  content   String   @db.Text
+  mentions  Json     @default("[]") @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  prompt   Prompt    @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([promptId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// Usage analytics
+model PromptUsage {
+  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId String    @map("prompt_id") @db.Uuid
+  userId   String    @map("user_id") @db.Uuid
+  llmUsed  String?   @map("llm_used") @db.VarChar(50)
+  success  Boolean?
+  context  String?   @db.Text
+  usedAt   DateTime  @default(now()) @map("used_at") @db.Timestamp(6)
+
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([promptId, usedAt(sort: Desc)])
+  @@index([userId, usedAt(sort: Desc)])
+  @@map("prompt_usage")
+}
+
+// Activity log
+model ActivityLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  action     String   @db.VarChar(50)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String   @map("entity_id") @db.Uuid
+  metadata   Json?    @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@map("activity_log")
+}
