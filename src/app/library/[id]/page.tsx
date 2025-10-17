@@ -55,7 +55,7 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
   };
 
   const handleEdit = () => {
-    router.push(`/library/${id}/edit`);
+    router.push(`/editor/${id}`);
   };
 
   const handleDelete = async () => {

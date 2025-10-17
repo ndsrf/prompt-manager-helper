@@ -75,7 +75,7 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
   };
 
   const handleEdit = (promptId: string) => {
-    router.push(`/library/${promptId}/edit`);
+    router.push(`/editor/${promptId}`);
   };
 
   const handleView = (promptId: string) => {

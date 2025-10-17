@@ -1,3 +1,10 @@
+/**
+ * @deprecated This basic form editor is deprecated and will be removed in a future version.
+ * Use the advanced editor at /editor/[id] instead, which includes AI optimization features.
+ *
+ * TODO: Remove this basic editor once all users are migrated to the advanced editor.
+ */
+
 'use client';
 
 import { useEffect, useState } from 'react';

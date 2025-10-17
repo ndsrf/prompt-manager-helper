@@ -75,7 +75,7 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
   };
 
   const handleEdit = (promptId: string) => {
-    router.push(`/library/${promptId}/edit`);
+    router.push(`/editor/${promptId}`);
   };
 
   const handleView = (promptId: string) => {
