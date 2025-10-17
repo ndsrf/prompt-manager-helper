@@ -162,7 +162,7 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
 
         {prompt.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
-            {prompt.tags.map((pt) => (
+            {prompt.tags.map((pt: any) => (
               <Badge
                 key={pt.tag.id}
                 variant="outline"
