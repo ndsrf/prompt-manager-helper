@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
-import { testPrompt, improvePrompt, analyzePrompt } from '@/lib/ai-service';
+import {
+  testPrompt,
+  improvePrompt,
+  analyzePrompt,
+  comparePrompts,
+  generateVariations,
+  suggestVariables,
+} from '@/lib/ai-service';
 
 export const aiRouter = createTRPCRouter({
   /**
@@ -185,4 +192,98 @@ export const aiRouter = createTRPCRouter({
       unlimited: true,
     };
   }),
+
+  /**
+   * Compare two prompts and explain differences
+   */
+  comparePrompts: protectedProcedure
+    .input(
+      z.object({
+        original: z.string().min(1),
+        improved: z.string().min(1),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const result = await comparePrompts(input.original, input.improved);
+        return result;
+      } catch (error: any) {
+        throw new Error(`Comparison failed: ${error.message}`);
+      }
+    }),
+
+  /**
+   * Generate prompt variations for A/B testing
+   */
+  generateVariations: protectedProcedure
+    .input(
+      z.object({
+        content: z.string().min(1),
+        targetLlm: z.string().optional(),
+        count: z.number().min(1).max(5).optional().default(3),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+
+      // Check user tier for this feature
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Variations feature only for Pro and Enterprise
+      if (user.subscriptionTier === 'free') {
+        throw new Error(
+          'Variation generation is only available for Pro and Enterprise users. Please upgrade to access this feature.'
+        );
+      }
+
+      try {
+        const result = await generateVariations(
+          input.content,
+          input.targetLlm,
+          input.count
+        );
+
+        // Log the activity
+        await ctx.prisma.activityLog.create({
+          data: {
+            userId,
+            action: 'generated_variations',
+            entityType: 'prompt',
+            entityId: userId,
+            metadata: {
+              targetLlm: input.targetLlm,
+              variationCount: result.length,
+            },
+          },
+        });
+
+        return result;
+      } catch (error: any) {
+        throw new Error(`Variation generation failed: ${error.message}`);
+      }
+    }),
+
+  /**
+   * Suggest variables for a prompt
+   */
+  suggestVariables: protectedProcedure
+    .input(
+      z.object({
+        content: z.string().min(1),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const result = await suggestVariables(input.content);
+        return result;
+      } catch (error: any) {
+        throw new Error(`Variable suggestion failed: ${error.message}`);
+      }
+    }),
 });

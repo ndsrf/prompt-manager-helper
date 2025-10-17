@@ -25,6 +25,8 @@ import { MetadataPanel } from './MetadataPanel';
 import { PromptImprover } from './PromptImprover';
 import { VersionHistory } from './VersionHistory';
 import { MarkdownPreview } from './MarkdownPreview';
+import { PromptVariations } from './PromptVariations';
+import { VariableSuggester } from './VariableSuggester';
 
 interface Prompt {
   id: string;
@@ -150,6 +152,11 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
             targetLlm={prompt.targetLlm}
             onApply={(improvedContent) => setContent(improvedContent)}
           />
+          <PromptVariations
+            content={content}
+            targetLlm={prompt.targetLlm}
+            onApply={(variation) => setContent(variation)}
+          />
           <VersionHistory
             promptId={prompt.id}
             currentContent={content}
@@ -221,6 +228,16 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
 
           {/* Variables Section */}
           <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-base font-semibold">Variables</Label>
+              <VariableSuggester
+                content={content}
+                onAddVariable={(variable) => {
+                  const newVariables = [...variables, variable];
+                  setVariables(newVariables);
+                }}
+              />
+            </div>
             <VariableManager
               variables={variables}
               onChange={handleVariablesChange}

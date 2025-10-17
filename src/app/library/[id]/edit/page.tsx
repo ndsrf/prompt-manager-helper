@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,13 +30,13 @@ const promptSchema = z.object({
 type PromptFormData = z.infer<typeof promptSchema>;
 
 interface PromptEditPageProps {
-  params: Promise<{
+  params: {
     id: string;
-  }>;
+  };
 }
 
 export default function PromptEditPage({ params }: PromptEditPageProps) {
-  const { id } = use(params);
+  const { id } = params;
   const router = useRouter();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 

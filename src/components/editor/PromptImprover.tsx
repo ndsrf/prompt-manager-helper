@@ -138,15 +138,15 @@ export function PromptImprover({
           {/* Results */}
           {result && (
             <>
-              {/* Score */}
+              {/* Score & Metrics */}
               <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <div>
                     <Label className="text-sm font-semibold">
                       Effectiveness Score
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Based on clarity, specificity, and structure
+                      Overall prompt quality assessment
                     </p>
                   </div>
                   <div className="text-4xl font-bold text-blue-600">
@@ -154,7 +154,73 @@ export function PromptImprover({
                     <span className="text-xl text-muted-foreground">/100</span>
                   </div>
                 </div>
+
+                {/* Detailed Metrics */}
+                {result.metrics && (
+                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs font-medium">Clarity</Label>
+                        <span className="text-xs font-semibold">{result.metrics.clarity}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-blue-500 h-2 rounded-full transition-all"
+                          style={{ width: `${result.metrics.clarity}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs font-medium">Specificity</Label>
+                        <span className="text-xs font-semibold">{result.metrics.specificity}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-green-500 h-2 rounded-full transition-all"
+                          style={{ width: `${result.metrics.specificity}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs font-medium">Structure</Label>
+                        <span className="text-xs font-semibold">{result.metrics.structure}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-purple-500 h-2 rounded-full transition-all"
+                          style={{ width: `${result.metrics.structure}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs font-medium">Context</Label>
+                        <span className="text-xs font-semibold">{result.metrics.contextAwareness}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-orange-500 h-2 rounded-full transition-all"
+                          style={{ width: `${result.metrics.contextAwareness}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </Card>
+
+              {/* Reasoning */}
+              {result.reasoning && (
+                <Card className="p-4 bg-amber-50/50">
+                  <Label className="text-sm font-semibold mb-2 block">
+                    AI Reasoning
+                  </Label>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {result.reasoning}
+                  </p>
+                </Card>
+              )}
 
               {/* Comparison */}
               <div className="grid grid-cols-2 gap-4">
