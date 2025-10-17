@@ -137,7 +137,7 @@ export function TemplateBrowser({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories?.map((category) => (
+                  {categories?.map((category: any) => (
                     <SelectItem key={category.name} value={category.name}>
                       {category.name} ({category.count})
                     </SelectItem>
@@ -154,7 +154,7 @@ export function TemplateBrowser({
                   Popular
                 </Label>
                 <div className="space-y-1">
-                  {popularTemplates.map((template) => (
+                  {popularTemplates.map((template: any) => (
                     <Button
                       key={template.id}
                       variant={
@@ -197,7 +197,7 @@ export function TemplateBrowser({
 
                 {templates && templates.length > 0 && (
                   <div className="grid grid-cols-2 gap-4">
-                    {templates.map((template) => (
+                    {templates.map((template: any) => (
                       <Card
                         key={template.id}
                         className="p-4 cursor-pointer hover:border-blue-500 transition-colors"
