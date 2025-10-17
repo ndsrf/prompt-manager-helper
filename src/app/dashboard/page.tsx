@@ -6,10 +6,23 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signOut } from 'next-auth/react';
+import { trpc } from '@/lib/trpc/client';
+import { Library } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Fetch dashboard stats
+  const { data: promptStats } = trpc.prompt.getStats.useQuery(undefined, {
+    enabled: status === 'authenticated',
+  });
+  const { data: folders } = trpc.folder.getAll.useQuery(undefined, {
+    enabled: status === 'authenticated',
+  });
+  const { data: tags } = trpc.tag.getAll.useQuery(undefined, {
+    enabled: status === 'authenticated',
+  });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -29,12 +42,23 @@ export default function DashboardPage() {
     return null;
   }
 
+  const totalPrompts = promptStats?.total ?? 0;
+  const totalFolders = folders?.length ?? 0;
+  const totalTags = tags?.length ?? 0;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between p-4">
           <h1 className="text-2xl font-bold">PromptEasy</h1>
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/library')}
+            >
+              <Library className="h-4 w-4 mr-2" />
+              Library
+            </Button>
             <span className="text-sm text-muted-foreground">
               {session.user.email}
             </span>
@@ -56,35 +80,38 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
+          <Card
+            className="cursor-pointer hover:bg-accent transition-colors"
+            onClick={() => router.push('/library')}
+          >
             <CardHeader>
               <CardTitle>Prompts</CardTitle>
               <CardDescription>Manage your prompt library</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">0</p>
+              <p className="text-2xl font-bold">{totalPrompts}</p>
               <p className="text-sm text-muted-foreground">Total prompts</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:bg-accent transition-colors">
             <CardHeader>
               <CardTitle>Folders</CardTitle>
               <CardDescription>Organize your prompts</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">0</p>
+              <p className="text-2xl font-bold">{totalFolders}</p>
               <p className="text-sm text-muted-foreground">Total folders</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:bg-accent transition-colors">
             <CardHeader>
               <CardTitle>Tags</CardTitle>
               <CardDescription>Categorize your prompts</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">0</p>
+              <p className="text-2xl font-bold">{totalTags}</p>
               <p className="text-sm text-muted-foreground">Total tags</p>
             </CardContent>
           </Card>
@@ -106,16 +133,20 @@ export default function DashboardPage() {
                     Build and save reusable prompts
                   </p>
                 </div>
-                <Button>Create Prompt</Button>
+                <Button onClick={() => router.push('/library/new')}>
+                  Create Prompt
+                </Button>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Organize with folders</p>
+                  <p className="font-medium">View your library</p>
                   <p className="text-sm text-muted-foreground">
-                    Keep your prompts structured
+                    Browse and manage all your prompts
                   </p>
                 </div>
-                <Button variant="outline">Create Folder</Button>
+                <Button variant="outline" onClick={() => router.push('/library')}>
+                  Go to Library
+                </Button>
               </div>
               <div className="flex items-center justify-between">
                 <div>
@@ -124,7 +155,9 @@ export default function DashboardPage() {
                     Use prompts directly in LLM interfaces
                   </p>
                 </div>
-                <Button variant="outline">Get Extension</Button>
+                <Button variant="outline" disabled>
+                  Coming Soon
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Plus, LayoutGrid, LayoutList } from 'lucide-react';
+import { Search, Plus, LayoutGrid, LayoutList, Home } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -25,11 +25,21 @@ export default function LibraryPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Prompt Library</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage and organize your prompts
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push('/dashboard')}
+            title="Back to Dashboard"
+          >
+            <Home className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Prompt Library</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage and organize your prompts
+            </p>
+          </div>
         </div>
         <Button onClick={handleCreatePrompt}>
           <Plus className="h-4 w-4 mr-2" />
