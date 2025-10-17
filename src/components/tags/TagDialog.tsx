@@ -138,7 +138,7 @@ export function TagDialog({ open, onOpenChange, tag, onSuccess }: TagDialogProps
           <div className="space-y-2">
             <Label>Color *</Label>
             <div className="grid grid-cols-9 gap-2">
-              {DEFAULT_COLORS.map((color) => (
+              {DEFAULT_COLORS.map((color: string) => (
                 <button
                   key={color}
                   type="button"

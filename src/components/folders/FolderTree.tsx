@@ -172,7 +172,7 @@ export function FolderTree({ selectedFolderId, onSelectFolder }: FolderTreeProps
 
         {isExpanded && hasChildren && (
           <div>
-            {folder.children.map((child) => renderFolder(child, depth + 1))}
+            {folder.children.map((child: any) => renderFolder(child, depth + 1))}
           </div>
         )}
       </div>
@@ -214,7 +214,7 @@ export function FolderTree({ selectedFolderId, onSelectFolder }: FolderTreeProps
       </div>
 
       {folders && folders.length > 0 ? (
-        folders.map((folder) => renderFolder(folder))
+        folders.map((folder: any) => renderFolder(folder))
       ) : (
         <p className="text-sm text-muted-foreground py-4 text-center">
           No folders yet. Click + to create one.

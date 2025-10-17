@@ -110,7 +110,7 @@ export function TestInterface({
       {variables.length > 0 && (
         <div className="space-y-3">
           <Label className="text-sm">Fill in Variables</Label>
-          {variables.map((variable) => (
+          {variables.map((variable: any) => (
             <div key={variable.name} className="space-y-1">
               <Label className="text-xs text-muted-foreground">
                 {'{{'} {variable.name} {'}}'}
@@ -129,7 +129,7 @@ export function TestInterface({
                     <SelectValue placeholder="Select value" />
                   </SelectTrigger>
                   <SelectContent>
-                    {variable.options.map((option) => (
+                    {variable.options.map((option: string) => (
                       <SelectItem key={option} value={option}>
                         {option}
                       </SelectItem>

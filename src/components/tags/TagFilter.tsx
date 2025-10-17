@@ -60,7 +60,7 @@ export function TagFilter({ selectedTagIds, onSelectTags }: TagFilterProps) {
 
       <div className="flex flex-wrap gap-2">
         {tags && tags.length > 0 ? (
-          tags.map((tag) => {
+          tags.map((tag: any) => {
             const isSelected = selectedTagIds.includes(tag.id);
             return (
               <Badge
