@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
 interface PromptListProps {
@@ -25,14 +25,25 @@ interface PromptListProps {
 
 export function PromptList({ folderId, tagIds, search }: PromptListProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
 
-  const { data, isLoading, refetch } = trpc.prompt.getAll.useQuery({
+  console.log('[PromptList] Component rendered with props:', { folderId, tagIds, search });
+
+  const { data, isLoading, error, refetch } = trpc.prompt.getAll.useQuery({
     folderId: folderId === null ? null : folderId,
     tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
     search: search || undefined,
     sortBy: 'updatedAt',
     sortOrder: 'desc',
+  });
+
+  console.log('[PromptList] Query state:', {
+    isLoading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    hasData: !!data,
+    promptCount: data?.prompts?.length
   });
 
   const toggleFavorite = trpc.prompt.toggleFavorite.useMutation({
@@ -85,14 +96,28 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
     });
   };
 
+  if (error) {
+    console.error('[PromptList] Error occurred:', error);
+    return (
+      <div className="text-center py-12">
+        <p className="text-destructive font-semibold mb-2">Error loading prompts</p>
+        <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
   if (isLoading) {
+    console.log('[PromptList] Rendering loading skeletons...');
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="border rounded-lg p-4">
-            <Skeleton className="h-6 w-3/4 mb-2" />
-            <Skeleton className="h-4 w-full mb-2" />
-            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-6 w-3/4 mb-2" data-testid={`skeleton-title-${i}`} />
+            <Skeleton className="h-4 w-full mb-2" data-testid={`skeleton-description-${i}`} />
+            <Skeleton className="h-4 w-1/2" data-testid={`skeleton-meta-${i}`} />
           </div>
         ))}
       </div>
@@ -100,6 +125,7 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
   }
 
   if (!data || data.prompts.length === 0) {
+    console.log('[PromptList] No data or empty prompts array');
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No prompts found.</p>
@@ -110,9 +136,11 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
     );
   }
 
+  console.log('[PromptList] Rendering prompts list with', data.prompts.length, 'prompts');
+
   return (
     <div className="space-y-3">
-      {data.prompts.map((prompt) => (
+      {data.prompts.map((prompt: any) => (
         <div
           key={prompt.id}
           className="border rounded-lg p-4 hover:bg-accent/50 cursor-pointer transition-colors group"
@@ -158,7 +186,7 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
 
               {prompt.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-3">
-                  {prompt.tags.map((pt) => (
+                  {prompt.tags.map((pt: any) => (
                     <Badge
                       key={pt.tag.id}
                       variant="outline"

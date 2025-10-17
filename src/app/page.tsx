@@ -12,10 +12,16 @@ export default function Home() {
         </p>
         <div className="flex gap-4 justify-center">
           <Link
-            href="/auth/login"
+            href="/library"
             className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition"
           >
-            Get Started
+            Go to Library
+          </Link>
+          <Link
+            href="/auth/login"
+            className="px-6 py-3 border border-border rounded-lg hover:bg-secondary transition"
+          >
+            Login
           </Link>
           <Link
             href="/auth/register"

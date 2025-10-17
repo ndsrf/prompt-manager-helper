@@ -360,3 +360,22 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@map("activity_log")
 }
+
+// Prompt templates (predefined templates for quick start)
+model PromptTemplate {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(255)
+  description String   @db.Text
+  category    String   @db.VarChar(100)
+  content     String   @db.Text
+  variables   Json     @default("[]") @db.JsonB
+  targetLlm   String?  @map("target_llm") @db.VarChar(50)
+  isPublic    Boolean  @default(true) @map("is_public")
+  usageCount  Int      @default(0) @map("usage_count")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@index([category])
+  @@index([isPublic])
+  @@map("prompt_templates")
+}

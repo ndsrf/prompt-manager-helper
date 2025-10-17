@@ -26,6 +26,10 @@ export const promptRouter = createTRPCRouter({
     }))
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      console.log('[promptRouter.getAll] Request received:', {
+        userId,
+        input,
+      });
 
       // Build where clause
       const where: Prisma.PromptWhereInput = {
@@ -69,7 +73,7 @@ export const promptRouter = createTRPCRouter({
       }
 
       // Cursor pagination
-      const cursorConfig = input.cursor
+      const cursorConfig: any = input.cursor
         ? {
             cursor: { id: input.cursor },
             skip: 1,
@@ -80,6 +84,8 @@ export const promptRouter = createTRPCRouter({
       const orderBy: Prisma.PromptOrderByWithRelationInput = {
         [input.sortBy]: input.sortOrder,
       };
+
+      console.log('[promptRouter.getAll] Executing query with where clause:', JSON.stringify(where, null, 2));
 
       const prompts = await ctx.prisma.prompt.findMany({
         where,
@@ -107,8 +113,12 @@ export const promptRouter = createTRPCRouter({
         },
       });
 
+      console.log('[promptRouter.getAll] Query completed, found', prompts.length, 'prompts');
+
       // Get next cursor
       const nextCursor = prompts.length === input.limit ? prompts[prompts.length - 1].id : undefined;
+
+      console.log('[promptRouter.getAll] Returning response with', prompts.length, 'prompts, nextCursor:', nextCursor);
 
       return {
         prompts,
@@ -246,7 +256,7 @@ export const promptRouter = createTRPCRouter({
           versionNumber: 1,
           title: prompt.title,
           content: prompt.content,
-          variables: prompt.variables,
+          variables: prompt.variables as any,
           changesSummary: 'Initial version',
           isSnapshot: true,
           createdBy: userId,
@@ -397,7 +407,7 @@ export const promptRouter = createTRPCRouter({
             versionNumber: newVersionNumber,
             title: prompt.title,
             content: prompt.content,
-            variables: prompt.variables,
+            variables: prompt.variables as any,
             changesSummary: 'Content updated',
             isSnapshot: false,
             createdBy: userId,
@@ -845,4 +855,40 @@ export const promptRouter = createTRPCRouter({
       byPrivacy,
     };
   }),
+
+  // Get version history for a prompt
+  getVersions: protectedProcedure
+    .input(z.object({
+      promptId: z.string().uuid(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Verify prompt belongs to user
+      const prompt = await ctx.prisma.prompt.findFirst({
+        where: {
+          id: input.promptId,
+          userId,
+          isDeleted: false,
+        },
+      });
+
+      if (!prompt) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Prompt not found',
+        });
+      }
+
+      const versions = await ctx.prisma.promptVersion.findMany({
+        where: {
+          promptId: input.promptId,
+        },
+        orderBy: {
+          versionNumber: 'desc',
+        },
+      });
+
+      return versions;
+    }),
 });

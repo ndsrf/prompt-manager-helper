@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
 interface PromptGridProps {
@@ -26,13 +26,24 @@ interface PromptGridProps {
 
 export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
   const router = useRouter();
+  const { toast } = useToast();
 
-  const { data, isLoading, refetch } = trpc.prompt.getAll.useQuery({
+  console.log('[PromptGrid] Component rendered with props:', { folderId, tagIds, search });
+
+  const { data, isLoading, error, refetch } = trpc.prompt.getAll.useQuery({
     folderId: folderId === null ? null : folderId,
     tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
     search: search || undefined,
     sortBy: 'updatedAt',
     sortOrder: 'desc',
+  });
+
+  console.log('[PromptGrid] Query state:', {
+    isLoading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    hasData: !!data,
+    promptCount: data?.prompts?.length
   });
 
   const toggleFavorite = trpc.prompt.toggleFavorite.useMutation({
@@ -85,7 +96,21 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
     });
   };
 
+  if (error) {
+    console.error('[PromptGrid] Error occurred:', error);
+    return (
+      <div className="text-center py-12">
+        <p className="text-destructive font-semibold mb-2">Error loading prompts</p>
+        <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
   if (isLoading) {
+    console.log('[PromptGrid] Rendering loading skeletons...');
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[...Array(6)].map((_, i) => (
@@ -104,6 +129,7 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
   }
 
   if (!data || data.prompts.length === 0) {
+    console.log('[PromptGrid] No data or empty prompts array');
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No prompts found.</p>
@@ -114,9 +140,11 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
     );
   }
 
+  console.log('[PromptGrid] Rendering prompts grid with', data.prompts.length, 'prompts');
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {data.prompts.map((prompt) => (
+      {data.prompts.map((prompt: any) => (
         <Card
           key={prompt.id}
           className="hover:border-primary cursor-pointer transition-colors group"
@@ -178,7 +206,7 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
 
             {prompt.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {prompt.tags.slice(0, 3).map((pt) => (
+                {prompt.tags.slice(0, 3).map((pt: any) => (
                   <Badge
                     key={pt.tag.id}
                     variant="outline"

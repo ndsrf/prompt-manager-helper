@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { trpc } from '@/lib/trpc/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const tagSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -40,6 +40,7 @@ interface TagDialogProps {
 }
 
 export function TagDialog({ open, onOpenChange, tag, onSuccess }: TagDialogProps) {
+  const { toast } = useToast();
   const isEditing = !!tag;
   const [selectedColor, setSelectedColor] = useState(tag?.color || DEFAULT_COLORS[0]);
 
@@ -68,50 +69,38 @@ export function TagDialog({ open, onOpenChange, tag, onSuccess }: TagDialogProps
     }
   }, [open, tag, reset]);
 
-  const createTag = trpc.tag.create.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Tag created',
-        description: 'The tag has been created successfully.',
-      });
-      reset();
-      onSuccess();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const createTag = trpc.tag.create.useMutation();
 
-  const updateTag = trpc.tag.update.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Tag updated',
-        description: 'The tag has been updated successfully.',
-      });
-      reset();
-      onSuccess();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const updateTag = trpc.tag.update.useMutation();
 
   const onSubmit = async (data: TagFormData) => {
-    if (isEditing) {
-      await updateTag.mutateAsync({
-        id: tag.id,
-        ...data,
+    try {
+      if (isEditing) {
+        await updateTag.mutateAsync({
+          id: tag.id,
+          ...data,
+        });
+        toast({
+          title: 'Tag updated',
+          description: 'The tag has been updated successfully.',
+        });
+        reset();
+        onSuccess();
+      } else {
+        await createTag.mutateAsync(data);
+        toast({
+          title: 'Tag created',
+          description: 'The tag has been created successfully.',
+        });
+        reset();
+        onSuccess();
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'An error occurred',
+        variant: 'destructive',
       });
-    } else {
-      await createTag.mutateAsync(data);
     }
   };
 

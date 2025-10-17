@@ -239,7 +239,7 @@ export const folderRouter = createTRPCRouter({
       });
 
       // If path changed, update all descendants
-      if (path !== existingFolder.path) {
+      if (path !== existingFolder.path && path !== null) {
         await updateDescendantPaths(ctx.prisma, input.id, path);
       }
 
