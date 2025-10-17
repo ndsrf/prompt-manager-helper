@@ -190,7 +190,7 @@ export default function NewPromptPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No folder</SelectItem>
-                  {folders?.map((folder) => (
+                  {folders?.map((folder: any) => (
                     <SelectItem key={folder.id} value={folder.id}>
                       {folder.name}
                     </SelectItem>
@@ -203,7 +203,7 @@ export default function NewPromptPage() {
               <Label>Tags</Label>
               <div className="flex flex-wrap gap-2">
                 {tags && tags.length > 0 ? (
-                  tags.map((tag) => {
+                  tags.map((tag: any) => {
                     const isSelected = selectedTags.includes(tag.id);
                     return (
                       <Badge
