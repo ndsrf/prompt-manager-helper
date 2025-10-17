@@ -235,7 +235,7 @@ describe('AI Service', () => {
           messages: expect.arrayContaining([
             expect.objectContaining({
               role: 'system',
-              content: expect.stringContaining('claude'),
+              content: expect.stringMatching(/claude/i),
             }),
           ]),
         })

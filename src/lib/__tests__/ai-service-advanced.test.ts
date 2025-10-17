@@ -1,3 +1,17 @@
+// Create a mock create function that we can control
+const mockCreate = jest.fn();
+
+// Mock OpenAI - MUST be before imports
+jest.mock('openai', () => {
+  return jest.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: mockCreate,
+      },
+    },
+  }));
+});
+
 import {
   improvePrompt,
   comparePrompts,
@@ -6,48 +20,39 @@ import {
   resetClients,
 } from '../ai-service';
 
-// Mock OpenAI
-jest.mock('openai', () => {
-  return {
-    default: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [
-              {
-                message: {
-                  content: JSON.stringify({
-                    improved: 'Improved prompt content',
-                    score: 85,
-                    suggestions: ['Add more context', 'Be more specific'],
-                    changes: [
-                      {
-                        type: 'add',
-                        description: 'Added clearer structure',
-                      },
-                    ],
-                    metrics: {
-                      clarity: 90,
-                      specificity: 85,
-                      structure: 88,
-                      contextAwareness: 80,
-                    },
-                    reasoning: 'Improved clarity and added structure',
-                  }),
-                },
-              },
-            ],
-          }),
-        },
-      },
-    })),
-  };
-});
-
 describe('AI Service - Advanced Features', () => {
   beforeEach(() => {
     resetClients();
     process.env.OPENAI_API_KEY = 'test-key';
+    jest.clearAllMocks();
+
+    // Set default mock response
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              improved: 'Improved prompt content',
+              score: 85,
+              suggestions: ['Add more context', 'Be more specific'],
+              changes: [
+                {
+                  type: 'add',
+                  description: 'Added clearer structure',
+                },
+              ],
+              metrics: {
+                clarity: 90,
+                specificity: 85,
+                structure: 88,
+                contextAwareness: 80,
+              },
+              reasoning: 'Improved clarity and added structure',
+            }),
+          },
+        },
+      ],
+    });
   });
 
   describe('improvePrompt with metrics', () => {
@@ -89,8 +94,7 @@ describe('AI Service - Advanced Features', () => {
 
   describe('comparePrompts', () => {
     it('should compare two prompts and explain differences', async () => {
-      const OpenAI = (await import('openai')).default;
-      const mockCreate = jest.fn().mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -110,15 +114,6 @@ describe('AI Service - Advanced Features', () => {
         ],
       });
 
-      // @ts-ignore
-      OpenAI.mockImplementation(() => ({
-        chat: {
-          completions: {
-            create: mockCreate,
-          },
-        },
-      }));
-
       const result = await comparePrompts(
         'Write a story',
         'Write a creative short story about adventure'
@@ -134,8 +129,7 @@ describe('AI Service - Advanced Features', () => {
 
   describe('generateVariations', () => {
     it('should generate multiple prompt variations', async () => {
-      const OpenAI = (await import('openai')).default;
-      const mockCreate = jest.fn().mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -163,15 +157,6 @@ describe('AI Service - Advanced Features', () => {
         ],
       });
 
-      // @ts-ignore
-      OpenAI.mockImplementation(() => ({
-        chat: {
-          completions: {
-            create: mockCreate,
-          },
-        },
-      }));
-
       const result = await generateVariations('Test prompt', 'chatgpt', 3);
 
       expect(Array.isArray(result)).toBe(true);
@@ -182,8 +167,7 @@ describe('AI Service - Advanced Features', () => {
     });
 
     it('should respect count parameter', async () => {
-      const OpenAI = (await import('openai')).default;
-      const mockCreate = jest.fn().mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -199,15 +183,6 @@ describe('AI Service - Advanced Features', () => {
         ],
       });
 
-      // @ts-ignore
-      OpenAI.mockImplementation(() => ({
-        chat: {
-          completions: {
-            create: mockCreate,
-          },
-        },
-      }));
-
       const result = await generateVariations('Test prompt', 'any', 5);
 
       expect(result).toHaveLength(5);
@@ -216,8 +191,7 @@ describe('AI Service - Advanced Features', () => {
 
   describe('suggestVariables', () => {
     it('should suggest variables for a prompt', async () => {
-      const OpenAI = (await import('openai')).default;
-      const mockCreate = jest.fn().mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -248,15 +222,6 @@ describe('AI Service - Advanced Features', () => {
           },
         ],
       });
-
-      // @ts-ignore
-      OpenAI.mockImplementation(() => ({
-        chat: {
-          completions: {
-            create: mockCreate,
-          },
-        },
-      }));
 
       const result = await suggestVariables('Write a story about {{topic}}');
 
@@ -303,17 +268,9 @@ describe('AI Service - Advanced Features', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      const OpenAI = (await import('openai')).default;
-      const mockCreate = jest.fn().mockRejectedValue(new Error('API Error'));
-
-      // @ts-ignore
-      OpenAI.mockImplementation(() => ({
-        chat: {
-          completions: {
-            create: mockCreate,
-          },
-        },
-      }));
+      process.env.OPENAI_API_KEY = 'test-key';
+      resetClients();
+      mockCreate.mockRejectedValue(new Error('API Error'));
 
       await expect(improvePrompt({ content: 'test' })).rejects.toThrow(
         'Failed to improve prompt'
