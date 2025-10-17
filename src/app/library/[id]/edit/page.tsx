@@ -234,7 +234,7 @@ export default function PromptEditPage({ params }: PromptEditPageProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No folder</SelectItem>
-                  {folders?.map((folder) => (
+                  {folders?.map((folder: any) => (
                     <SelectItem key={folder.id} value={folder.id}>
                       {folder.name}
                     </SelectItem>
