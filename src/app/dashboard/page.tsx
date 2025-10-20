@@ -49,29 +49,30 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container mx-auto flex items-center justify-between p-4">
-          <h1 className="text-2xl font-bold">PromptEasy</h1>
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-3 sm:gap-0">
+          <h1 className="text-xl sm:text-2xl font-bold">PromptEasy</h1>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <Button
               variant="ghost"
               onClick={() => router.push('/library')}
+              className="w-full sm:w-auto justify-start sm:justify-center"
             >
               <Library className="h-4 w-4 mr-2" />
               Library
             </Button>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground truncate max-w-full sm:max-w-xs">
               {session.user.email}
             </span>
-            <Button variant="outline" onClick={() => signOut()}>
+            <Button variant="outline" onClick={() => signOut()} className="w-full sm:w-auto">
               Sign out
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto p-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold">
+      <main className="container mx-auto p-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold">
             Welcome, {session.user.name || session.user.email}!
           </h2>
           <p className="text-muted-foreground mt-2">
@@ -79,7 +80,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card
             className="cursor-pointer hover:bg-accent transition-colors"
             onClick={() => router.push('/library')}
@@ -117,7 +118,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
           <Card>
             <CardHeader>
               <CardTitle>Getting Started</CardTitle>
@@ -126,36 +127,36 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <div className="flex-1">
                   <p className="font-medium">Create your first prompt</p>
                   <p className="text-sm text-muted-foreground">
                     Build and save reusable prompts
                   </p>
                 </div>
-                <Button onClick={() => router.push('/library/new')}>
+                <Button onClick={() => router.push('/library/new')} className="w-full sm:w-auto">
                   Create Prompt
                 </Button>
               </div>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <div className="flex-1">
                   <p className="font-medium">View your library</p>
                   <p className="text-sm text-muted-foreground">
                     Browse and manage all your prompts
                   </p>
                 </div>
-                <Button variant="outline" onClick={() => router.push('/library')}>
+                <Button variant="outline" onClick={() => router.push('/library')} className="w-full sm:w-auto">
                   Go to Library
                 </Button>
               </div>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <div className="flex-1">
                   <p className="font-medium">Install Chrome Extension</p>
                   <p className="text-sm text-muted-foreground">
                     Use prompts directly in LLM interfaces
                   </p>
                 </div>
-                <Button variant="outline" disabled>
+                <Button variant="outline" disabled className="w-full sm:w-auto">
                   Coming Soon
                 </Button>
               </div>

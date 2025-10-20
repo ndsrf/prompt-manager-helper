@@ -56,4 +56,22 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Improve touch targets for mobile */
+  @media (max-width: 640px) {
+    button, a {
+      min-height: 44px;
+    }
+  }
+
+  /* Prevent horizontal scroll on mobile */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  /* Better text rendering on mobile */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }

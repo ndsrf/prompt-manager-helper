@@ -143,18 +143,18 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
       {data.prompts.map((prompt: any) => (
         <div
           key={prompt.id}
-          className="border rounded-lg p-4 hover:bg-accent/50 cursor-pointer transition-colors group"
+          className="border rounded-lg p-3 sm:p-4 hover:bg-accent/50 cursor-pointer transition-colors group"
           onClick={() => handleView(prompt.id)}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-2 sm:gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-semibold text-lg truncate">{prompt.title}</h3>
+                <h3 className="font-semibold text-base sm:text-lg truncate">{prompt.title}</h3>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-6 w-6 p-0 ${
-                    prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground opacity-0 group-hover:opacity-100'
+                  className={`h-6 w-6 p-0 flex-shrink-0 ${
+                    prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground sm:opacity-0 group-hover:opacity-100'
                   }`}
                   onClick={(e) => handleToggleFavorite(e, prompt.id)}
                 >
@@ -163,30 +163,31 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
               </div>
 
               {prompt.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2 sm:mb-3">
                   {prompt.description}
                 </p>
               )}
 
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                 {prompt.folder && (
                   <div className="flex items-center gap-1">
                     <Folder className="h-3 w-3" />
-                    {prompt.folder.name}
+                    <span className="truncate max-w-[100px] sm:max-w-none">{prompt.folder.name}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {formatDistanceToNow(new Date(prompt.updatedAt), { addSuffix: true })}
+                  <span className="hidden sm:inline">{formatDistanceToNow(new Date(prompt.updatedAt), { addSuffix: true })}</span>
+                  <span className="sm:hidden">{formatDistanceToNow(new Date(prompt.updatedAt))}</span>
                 </div>
                 {prompt._count.versions > 0 && (
-                  <span>{prompt._count.versions} versions</span>
+                  <span className="hidden sm:inline">{prompt._count.versions} versions</span>
                 )}
               </div>
 
               {prompt.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {prompt.tags.map((pt: any) => (
+                <div className="flex flex-wrap gap-1 mt-2 sm:mt-3">
+                  {prompt.tags.slice(0, 3).map((pt: any) => (
                     <Badge
                       key={pt.tag.id}
                       variant="outline"
@@ -199,13 +200,18 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
                       {pt.tag.name}
                     </Badge>
                   ))}
+                  {prompt.tags.length > 3 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{prompt.tags.length - 3}
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0 sm:opacity-0 group-hover:opacity-100">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

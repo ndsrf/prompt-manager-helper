@@ -116,59 +116,69 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <div className="flex-1 w-full sm:w-auto">
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="text-2xl font-bold border-none shadow-none px-0 focus-visible:ring-0"
+            className="text-xl sm:text-2xl font-bold border-none shadow-none px-0 focus-visible:ring-0"
             placeholder="Untitled Prompt"
           />
           {hasChanges && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Unsaved changes • Auto-save in 30s
             </p>
           )}
           {!hasChanges && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Last saved: {lastSaved.toLocaleTimeString()}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowTestInterface(!showTestInterface)}
+            className="flex-1 sm:flex-none"
           >
-            <TestTube2 className="h-4 w-4 mr-2" />
-            Test
+            <TestTube2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Test</span>
           </Button>
-          <PromptImprover
-            promptId={prompt.id}
-            content={content}
-            targetLlm={prompt.targetLlm}
-            onApply={(improvedContent) => setContent(improvedContent)}
-          />
-          <PromptVariations
-            content={content}
-            targetLlm={prompt.targetLlm}
-            onApply={(variation) => setContent(variation)}
-          />
-          <VersionHistory
-            promptId={prompt.id}
-            currentContent={content}
-            onRestore={(restoredContent) => setContent(restoredContent)}
-          />
+          <div className="hidden sm:block">
+            <PromptImprover
+              promptId={prompt.id}
+              content={content}
+              targetLlm={prompt.targetLlm}
+              onApply={(improvedContent) => setContent(improvedContent)}
+            />
+          </div>
+          <div className="hidden sm:block">
+            <PromptVariations
+              content={content}
+              targetLlm={prompt.targetLlm}
+              onApply={(variation) => setContent(variation)}
+            />
+          </div>
+          <div className="hidden sm:block">
+            <VersionHistory
+              promptId={prompt.id}
+              currentContent={content}
+              onRestore={(restoredContent) => setContent(restoredContent)}
+            />
+          </div>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={!hasChanges || updatePromptMutation.isPending}
+            className="flex-1 sm:flex-none"
           >
-            <Save className="h-4 w-4 mr-2" />
-            {updatePromptMutation.isPending ? 'Saving...' : 'Save'}
+            <Save className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">
+              {updatePromptMutation.isPending ? 'Saving...' : 'Save'}
+            </span>
           </Button>
         </div>
       </div>
@@ -179,35 +189,36 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Add a description (optional)"
-          className="border-none shadow-none px-0 focus-visible:ring-0"
+          className="border-none shadow-none px-0 focus-visible:ring-0 text-sm sm:text-base"
         />
       </div>
 
       <Separator />
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Editor Section */}
         <div className="lg:col-span-2 space-y-4">
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Prompt Content</Label>
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <Label className="text-sm sm:text-base font-semibold">Prompt Content</Label>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Button
                     variant={showPreview ? 'secondary' : 'outline'}
                     size="sm"
                     onClick={() => setShowPreview(!showPreview)}
+                    className="flex-1 sm:flex-none"
                   >
                     {showPreview ? (
                       <>
-                        <Code className="h-4 w-4 mr-2" />
-                        Editor
+                        <Code className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Editor</span>
                       </>
                     ) : (
                       <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
+                        <Eye className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Preview</span>
                       </>
                     )}
                   </Button>
@@ -227,9 +238,9 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
           </Card>
 
           {/* Variables Section */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <Label className="text-base font-semibold">Variables</Label>
+          <Card className="p-3 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2 sm:gap-0">
+              <Label className="text-sm sm:text-base font-semibold">Variables</Label>
               <VariableSuggester
                 content={content}
                 onAddVariable={(variable) => {
