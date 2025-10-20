@@ -248,20 +248,17 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
         {/* Right Sidebar */}
         <div className="space-y-4">
           <MetadataPanel prompt={prompt} />
-
-          {/* Testing Interface */}
-          {showTestInterface && (
-            <Card className="p-6">
-              <TestInterface
-                prompt={prompt}
-                content={content}
-                variables={variables}
-                onClose={() => setShowTestInterface(false)}
-              />
-            </Card>
-          )}
         </div>
       </div>
+
+      {/* Testing Interface Dialog */}
+      <TestInterface
+        prompt={prompt}
+        content={content}
+        variables={variables}
+        open={showTestInterface}
+        onClose={() => setShowTestInterface(false)}
+      />
     </div>
   );
 }

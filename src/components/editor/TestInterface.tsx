@@ -11,11 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
-import { X, Send, Loader2 } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Variable {
   name: string;
@@ -32,6 +40,7 @@ interface TestInterfaceProps {
   };
   content: string;
   variables: Variable[];
+  open: boolean;
   onClose: () => void;
 }
 
@@ -39,6 +48,7 @@ export function TestInterface({
   prompt,
   content,
   variables,
+  open,
   onClose,
 }: TestInterfaceProps) {
   const { toast } = useToast();
@@ -81,105 +91,131 @@ export function TestInterface({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label className="text-base font-semibold">Test Prompt</Label>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Test Prompt</DialogTitle>
+          <DialogDescription>
+            Fill in the variables and test your prompt with an AI model
+          </DialogDescription>
+        </DialogHeader>
 
-      <Separator />
+        <div className="space-y-4 mt-4">
+          {/* LLM Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Test with LLM</Label>
+            <Select value={selectedLlm} onValueChange={setSelectedLlm}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chatgpt">ChatGPT (GPT-4o)</SelectItem>
+                <SelectItem value="claude">Claude (Sonnet)</SelectItem>
+                <SelectItem value="gemini">Gemini</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* LLM Selection */}
-      <div className="space-y-2">
-        <Label className="text-sm">Test with LLM</Label>
-        <Select value={selectedLlm} onValueChange={setSelectedLlm}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="chatgpt">ChatGPT (GPT-4)</SelectItem>
-            <SelectItem value="claude">Claude (Sonnet)</SelectItem>
-            <SelectItem value="gemini">Gemini</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          {/* Variable Values */}
+          {variables.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Fill in Variables</Label>
+                {variables.map((variable: any) => (
+                  <div key={variable.name} className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">
+                      {'{{'} {variable.name} {'}}'}
+                    </Label>
+                    {variable.type === 'select' && variable.options ? (
+                      <Select
+                        value={variableValues[variable.name] || variable.default}
+                        onValueChange={(value) =>
+                          setVariableValues((prev) => ({
+                            ...prev,
+                            [variable.name]: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select value" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {variable.options.map((option: string) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : variable.type === 'number' ? (
+                      <Input
+                        type="number"
+                        value={variableValues[variable.name] || variable.default || ''}
+                        onChange={(e) =>
+                          setVariableValues((prev) => ({
+                            ...prev,
+                            [variable.name]: e.target.value,
+                          }))
+                        }
+                        placeholder={variable.default || `Enter ${variable.name}`}
+                      />
+                    ) : (
+                      <Textarea
+                        value={variableValues[variable.name] || variable.default || ''}
+                        onChange={(e) =>
+                          setVariableValues((prev) => ({
+                            ...prev,
+                            [variable.name]: e.target.value,
+                          }))
+                        }
+                        placeholder={variable.default || `Enter ${variable.name}`}
+                        rows={3}
+                        className="resize-y"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-      {/* Variable Values */}
-      {variables.length > 0 && (
-        <div className="space-y-3">
-          <Label className="text-sm">Fill in Variables</Label>
-          {variables.map((variable: any) => (
-            <div key={variable.name} className="space-y-1">
-              <Label className="text-xs text-muted-foreground">
-                {'{{'} {variable.name} {'}}'}
-              </Label>
-              {variable.type === 'select' && variable.options ? (
-                <Select
-                  value={variableValues[variable.name] || variable.default}
-                  onValueChange={(value) =>
-                    setVariableValues((prev) => ({
-                      ...prev,
-                      [variable.name]: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select value" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {variable.options.map((option: string) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  type={variable.type === 'number' ? 'number' : 'text'}
-                  value={variableValues[variable.name] || variable.default || ''}
-                  onChange={(e) =>
-                    setVariableValues((prev) => ({
-                      ...prev,
-                      [variable.name]: e.target.value,
-                    }))
-                  }
-                  placeholder={variable.default || `Enter ${variable.name}`}
-                />
-              )}
-            </div>
-          ))}
+          <Separator />
+
+          {/* Test Button */}
+          <Button
+            onClick={handleTest}
+            disabled={testPrompt.isPending}
+            className="w-full"
+            size="lg"
+          >
+            {testPrompt.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Testing...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Test Prompt
+              </>
+            )}
+          </Button>
+
+          {/* Test Result */}
+          {testResult && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Response</Label>
+                <Card className="p-4 bg-muted/50">
+                  <p className="text-sm whitespace-pre-wrap">{testResult}</p>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
-      )}
-
-      {/* Test Button */}
-      <Button
-        onClick={handleTest}
-        disabled={testPrompt.isPending}
-        className="w-full"
-      >
-        {testPrompt.isPending ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Testing...
-          </>
-        ) : (
-          <>
-            <Send className="h-4 w-4 mr-2" />
-            Test Prompt
-          </>
-        )}
-      </Button>
-
-      {/* Test Result */}
-      {testResult && (
-        <Card className="p-4 bg-muted/50">
-          <Label className="text-sm font-semibold">Response</Label>
-          <p className="text-sm mt-2 whitespace-pre-wrap">{testResult}</p>
-        </Card>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
