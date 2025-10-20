@@ -32,7 +32,7 @@ test.describe('Prompt Editor', () => {
 
   test.describe('Editor Interface', () => {
     test('should load prompt in editor', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Check if title is loaded
       const titleInput = authenticatedPage.locator('input[name="title"]');
@@ -44,7 +44,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should update prompt title', async ({ authenticatedPage, testUser }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       const titleInput = authenticatedPage.locator('input[name="title"]');
       await titleInput.fill('Updated Test Prompt');
@@ -65,7 +65,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should update prompt content', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Find content editor (CodeMirror)
       const contentEditor = authenticatedPage.locator(
@@ -90,7 +90,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should show character and token count', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Should show token counter
       await expect(authenticatedPage.locator('text=/chars/i')).toBeVisible();
@@ -99,7 +99,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should auto-save prompt', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       const titleInput = authenticatedPage.locator('input[name="title"]');
       await titleInput.fill('Auto-saved Title');
@@ -115,7 +115,7 @@ test.describe('Prompt Editor', () => {
 
   test.describe('Variables', () => {
     test('should display existing variables', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Should show variables panel
       await expect(authenticatedPage.locator('text=/topic/i')).toBeVisible();
@@ -123,7 +123,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should add a new variable', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Click add variable button
       const addVariableButton = authenticatedPage.locator('button:has-text("Add Variable")');
@@ -143,7 +143,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should highlight variables in content', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Variables should be highlighted (check for specific class or style)
       const variableHighlight = authenticatedPage.locator('text=/{{topic}}/');
@@ -153,7 +153,7 @@ test.describe('Prompt Editor', () => {
 
   test.describe('Version History', () => {
     test('should create version on content change', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Make a change
       const contentEditor = authenticatedPage.locator('.cm-content, textarea[name="content"]').first();
@@ -189,7 +189,7 @@ test.describe('Prompt Editor', () => {
         },
       });
 
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Open history
       const historyButton = authenticatedPage.locator('button:has-text("History")');
@@ -214,7 +214,7 @@ test.describe('Prompt Editor', () => {
         },
       });
 
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Open history
       const historyButton = authenticatedPage.locator('button:has-text("History")');
@@ -240,7 +240,7 @@ test.describe('Prompt Editor', () => {
 
   test.describe('Testing Interface', () => {
     test('should open test interface', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Click test button
       const testButton = authenticatedPage.locator('button:has-text("Test")');
@@ -251,7 +251,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should fill in variables before testing', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       const testButton = authenticatedPage.locator('button:has-text("Test")');
       await testButton.click();
@@ -270,7 +270,7 @@ test.describe('Prompt Editor', () => {
     });
 
     test('should show LLM selection', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       const testButton = authenticatedPage.locator('button:has-text("Test")');
       await testButton.click();
@@ -283,14 +283,14 @@ test.describe('Prompt Editor', () => {
 
   test.describe('AI Improvement', () => {
     test('should show improve button', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       const improveButton = authenticatedPage.locator('button:has-text("Improve")');
       await expect(improveButton).toBeVisible();
     });
 
     test('should analyze prompt when improve is clicked', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       const improveButton = authenticatedPage.locator('button:has-text("Improve")');
       await improveButton.click();
@@ -304,7 +304,7 @@ test.describe('Prompt Editor', () => {
 
   test.describe('Markdown Preview', () => {
     test('should toggle markdown preview', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto(`/library/${testPrompt.id}/edit`);
+      await authenticatedPage.goto(`/editor/${testPrompt.id}`);
 
       // Look for preview toggle button
       const previewButton = authenticatedPage.locator('button:has-text("Preview")');
