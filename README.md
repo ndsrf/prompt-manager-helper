@@ -12,6 +12,10 @@ A professional prompt engineering and management platform built with Next.js, tR
 - ✅ **PostgreSQL Database** - Prisma ORM with full schema
 - ✅ **Redis Cache** - Session storage and rate limiting
 - ✅ **Authentication** - NextAuth.js with JWT strategy
+  - Email/password authentication
+  - Google OAuth integration
+  - Automatic user creation on first OAuth login
+  - Session management with JWT
 - ✅ **API Layer** - tRPC with end-to-end type safety
 - ✅ **Security** - bcrypt password hashing (12 rounds), rate limiting
 - ✅ **Testing** - Jest configuration with 70%+ coverage target
@@ -40,6 +44,12 @@ npm install
 
 ### 2. Configure Environment Variables
 
+Copy `.env.example` to `.env` and update with your credentials:
+
+```bash
+cp .env.example .env
+```
+
 Update the `.env` file with your cloud database credentials:
 
 ```env
@@ -49,12 +59,38 @@ DATABASE_URL="postgresql://username:password@host:5432/prompteasy?schema=public"
 # Redis Connection (replace with your cloud provider URL)
 REDIS_URL="redis://username:password@host:6379"
 
-# NextAuth Secret (already generated)
-NEXTAUTH_SECRET="gGQXNnt+sTZoZ99Q1G/2+iyqmBW+iynecbLkOgA+p0s="
+# NextAuth Configuration
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
 NEXTAUTH_URL="http://localhost:3000"
+
+# Google OAuth (optional but recommended)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
 NODE_ENV="development"
 ```
+
+#### Setting up Google OAuth
+
+Google OAuth allows users to sign in with their Google accounts. To set it up:
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the Google+ API:
+   - Go to "APIs & Services" > "Library"
+   - Search for "Google+ API"
+   - Click "Enable"
+4. Create OAuth credentials:
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth client ID"
+   - Select "Web application"
+   - Add authorized redirect URIs:
+     - Development: `http://localhost:3000/api/auth/callback/google`
+     - Production: `https://yourdomain.com/api/auth/callback/google`
+   - Click "Create"
+5. Copy the Client ID and Client Secret to your `.env` file
+
+**Note**: Google OAuth is optional. Users can still register/login with email and password if Google OAuth is not configured.
 
 #### Cloud Database Providers
 

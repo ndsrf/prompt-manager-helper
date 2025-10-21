@@ -1,5 +1,6 @@
 import { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
 
@@ -30,6 +31,10 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -73,7 +78,54 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        });
+
+        if (existingUser) {
+          // Update existing user with Google info if not already set
+          if (!existingUser.provider || existingUser.provider === 'email') {
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: {
+                provider: 'google',
+                providerId: account.providerAccountId,
+                avatarUrl: user.image,
+                emailVerified: true,
+                lastLogin: new Date(),
+              },
+            });
+          } else {
+            // Just update last login
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { lastLogin: new Date() },
+            });
+          }
+          // Store the existing user ID for later use
+          user.id = existingUser.id;
+        } else {
+          // Create new user
+          const newUser = await prisma.user.create({
+            data: {
+              email: user.email!,
+              name: user.name,
+              provider: 'google',
+              providerId: account.providerAccountId,
+              avatarUrl: user.image,
+              emailVerified: true,
+              lastLogin: new Date(),
+            },
+          });
+          user.id = newUser.id;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
