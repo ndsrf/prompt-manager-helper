@@ -1417,7 +1417,7 @@ CREATE TABLE activity_log (
 9. Implement AI improvement in extension
 10. Add offline caching with sync
 11. Build settings page
-12. Test across multiple LLM interfaces (ChatGPT, Claude, Gemini)
+12. Test across multiple LLM interfaces (ChatGPT, Claude, Gemini, Copilot)
 13. Submit to Chrome Web Store
 
 **Deliverables**:
@@ -1553,6 +1553,7 @@ CREATE TABLE activity_log (
 **Tasks**:
 1. Create a user profile page to select avatar, username, bio
 2. Add "Custom instructions" to the profile page, to add details you want the AI to know about you and specify how you would like it to format its responses.
+
 
 **Deliverables**:
 - User profile page

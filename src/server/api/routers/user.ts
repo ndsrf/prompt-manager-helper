@@ -53,6 +53,9 @@ export const userRouter = createTRPCRouter({
         id: true,
         email: true,
         name: true,
+        username: true,
+        bio: true,
+        customInstructions: true,
         avatarUrl: true,
         subscriptionTier: true,
         subscriptionStatus: true,
@@ -75,11 +78,33 @@ export const userRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().optional(),
-        avatarUrl: z.string().url().optional(),
+        username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens').optional().nullable(),
+        bio: z.string().max(500).optional().nullable(),
+        customInstructions: z.string().max(2000).optional().nullable(),
+        avatarUrl: z.string().url().optional().nullable(),
         settings: z.record(z.any()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if username is already taken by another user
+      if (input.username) {
+        const existingUser = await ctx.prisma.user.findFirst({
+          where: {
+            username: input.username,
+            NOT: {
+              id: ctx.session.user.id,
+            },
+          },
+        });
+
+        if (existingUser) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Username is already taken',
+          });
+        }
+      }
+
       const user = await ctx.prisma.user.update({
         where: { id: ctx.session.user.id },
         data: input,
@@ -87,6 +112,9 @@ export const userRouter = createTRPCRouter({
           id: true,
           email: true,
           name: true,
+          username: true,
+          bio: true,
+          customInstructions: true,
           avatarUrl: true,
           settings: true,
         },

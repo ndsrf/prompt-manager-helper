@@ -16,17 +16,33 @@ export const aiRouter = createTRPCRouter({
   testPrompt: protectedProcedure
     .input(
       z.object({
+        promptId: z.string().uuid().optional(),
         content: z.string().min(1),
         llm: z.enum(['chatgpt', 'claude', 'gemini']),
         maxTokens: z.number().min(100).max(4000).optional().default(1000),
+        applyCustomInstructions: z.boolean().optional().default(true),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.user.id;
 
       try {
+        let finalContent = input.content;
+
+        // If applyCustomInstructions is true, prepend user's custom instructions
+        if (input.applyCustomInstructions) {
+          const user = await ctx.prisma.user.findUnique({
+            where: { id: userId },
+            select: { customInstructions: true },
+          });
+
+          if (user?.customInstructions) {
+            finalContent = `${user.customInstructions}\n\n${input.content}`;
+          }
+        }
+
         const result = await testPrompt({
-          content: input.content,
+          content: finalContent,
           llm: input.llm,
           maxTokens: input.maxTokens,
         });
@@ -37,10 +53,11 @@ export const aiRouter = createTRPCRouter({
             userId,
             action: 'tested_prompt',
             entityType: 'prompt',
-            entityId: userId, // Using userId as placeholder since we don't have promptId
+            entityId: input.promptId || userId,
             metadata: {
               llm: input.llm,
               contentLength: input.content.length,
+              appliedCustomInstructions: input.applyCustomInstructions,
             },
           },
         });

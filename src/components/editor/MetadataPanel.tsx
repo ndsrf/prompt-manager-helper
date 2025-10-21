@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { trpc } from '@/lib/trpc/client';
 import { Star, Folder, Lock, Globe, Users, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +23,7 @@ interface Prompt {
   isFavorite: boolean;
   privacy: string;
   folderId: string | null;
+  applyCustomInstructions?: boolean;
   tags: Array<{ tag: { id: string; name: string; color: string | null } }>;
 }
 
@@ -102,6 +104,31 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
               <SelectItem value="llama">Llama</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Apply Custom Instructions */}
+        <div className="flex items-start space-x-3">
+          <Checkbox
+            id="applyCustomInstructions"
+            checked={prompt.applyCustomInstructions ?? true}
+            onCheckedChange={(checked) =>
+              updatePrompt.mutate({
+                id: prompt.id,
+                applyCustomInstructions: checked === true,
+              })
+            }
+          />
+          <div className="space-y-1 leading-none">
+            <Label
+              htmlFor="applyCustomInstructions"
+              className="text-sm font-medium cursor-pointer"
+            >
+              Apply my custom instructions
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              When enabled, your profile custom instructions will be prepended to the prompt before running tests
+            </p>
+          </div>
         </div>
 
         {/* Privacy */}

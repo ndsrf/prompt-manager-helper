@@ -45,6 +45,7 @@ interface Prompt {
   isFavorite: boolean;
   privacy: string;
   folderId: string | null;
+  applyCustomInstructions?: boolean;
   tags: Array<{ tag: { id: string; name: string; color: string | null } }>;
 }
 

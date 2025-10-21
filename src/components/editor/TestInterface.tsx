@@ -37,6 +37,7 @@ interface TestInterfaceProps {
     id: string;
     title: string;
     targetLlm: string | null;
+    applyCustomInstructions?: boolean;
   };
   content: string;
   variables: Variable[];
@@ -85,8 +86,10 @@ export function TestInterface({
     });
 
     testPrompt.mutate({
+      promptId: prompt.id,
       content: finalContent,
       llm: selectedLlm as 'chatgpt' | 'claude' | 'gemini',
+      applyCustomInstructions: prompt.applyCustomInstructions ?? true,
     });
   };
 

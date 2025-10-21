@@ -298,6 +298,7 @@ export const promptRouter = createTRPCRouter({
       tagIds: z.array(z.string().uuid()).optional(),
       privacy: z.enum(['private', 'shared', 'public']).optional(),
       isFavorite: z.boolean().optional(),
+      applyCustomInstructions: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
@@ -378,6 +379,7 @@ export const promptRouter = createTRPCRouter({
       if (input.folderId !== undefined) updateData.folderId = input.folderId;
       if (input.privacy !== undefined) updateData.privacy = input.privacy;
       if (input.isFavorite !== undefined) updateData.isFavorite = input.isFavorite;
+      if (input.applyCustomInstructions !== undefined) updateData.applyCustomInstructions = input.applyCustomInstructions;
 
       const prompt = await ctx.prisma.prompt.update({
         where: { id: input.id },

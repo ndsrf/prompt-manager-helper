@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signOut } from 'next-auth/react';
 import { trpc } from '@/lib/trpc/client';
-import { Library, Globe } from 'lucide-react';
+import { Library, Globe, User } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -71,9 +72,15 @@ export default function DashboardPage() {
               <Globe className="h-4 w-4 mr-2" />
               Gallery
             </Button>
-            <span className="text-sm text-muted-foreground truncate max-w-full sm:max-w-xs">
-              {session.user.email}
-            </span>
+            <Link href="/profile" className="w-full sm:w-auto">
+              <Button
+                variant="ghost"
+                className="w-full sm:w-auto justify-start sm:justify-center"
+              >
+                <User className="h-4 w-4 mr-2" />
+                <span className="truncate max-w-[150px]">{session.user.email}</span>
+              </Button>
+            </Link>
             <Button variant="outline" onClick={() => signOut()} className="w-full sm:w-auto">
               Sign out
             </Button>
