@@ -95,80 +95,87 @@ export default function NewPromptPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-3xl font-bold">Create New Prompt</h1>
-        <p className="text-muted-foreground mt-1">
-          Add a new prompt to your library
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-900">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)]" />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-          </CardHeader>
+      <div className="relative z-10 container mx-auto py-6 max-w-4xl px-4">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4 text-white hover:bg-white/10"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold text-white">Create New Prompt</h1>
+          <p className="text-gray-400 mt-1">
+            Add a new prompt to your library
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white">Basic Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-gray-300">Title *</Label>
+                <Input
+                  id="title"
+                  {...register('title')}
+                  placeholder="Enter prompt title"
+                  autoFocus
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500"
+                />
+                {errors.title && (
+                  <p className="text-sm text-red-300">{errors.title.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-gray-300">Description</Label>
+                <Input
+                  id="description"
+                  {...register('description')}
+                  placeholder="Enter a brief description (optional)"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="content" className="text-gray-300">Prompt Content *</Label>
+                <textarea
+                  id="content"
+                  {...register('content')}
+                  className="w-full min-h-[200px] rounded-md border bg-white/5 border-white/10 text-white px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Enter your prompt content here..."
+                />
+                {errors.content && (
+                  <p className="text-sm text-red-300">{errors.content.message}</p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Use {'{{variable}}'} syntax for template variables
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white">Organization</CardTitle>
+            </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                {...register('title')}
-                placeholder="Enter prompt title"
-                autoFocus
-              />
-              {errors.title && (
-                <p className="text-sm text-destructive">{errors.title.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                {...register('description')}
-                placeholder="Enter a brief description (optional)"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="content">Prompt Content *</Label>
-              <textarea
-                id="content"
-                {...register('content')}
-                className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Enter your prompt content here..."
-              />
-              {errors.content && (
-                <p className="text-sm text-destructive">{errors.content.message}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Use {'{{variable}}'} syntax for template variables
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Organization</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="targetLlm">Target LLM</Label>
+              <Label htmlFor="targetLlm" className="text-gray-300">Target LLM</Label>
               <Select
                 onValueChange={(value) => setValue('targetLlm', value)}
                 defaultValue="any"
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Select target LLM" />
                 </SelectTrigger>
                 <SelectContent>
@@ -182,11 +189,11 @@ export default function NewPromptPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="folder">Folder</Label>
+              <Label htmlFor="folder" className="text-gray-300">Folder</Label>
               <Select
                 onValueChange={(value) => setValue('folderId', value === 'none' ? null : value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Select a folder (optional)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -201,7 +208,7 @@ export default function NewPromptPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Tags</Label>
+              <Label className="text-gray-300">Tags</Label>
               <div className="flex flex-wrap gap-2">
                 {tags && tags.length > 0 ? (
                   tags.map((tag: any) => {
@@ -223,7 +230,7 @@ export default function NewPromptPage() {
                     );
                   })
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-400">
                     No tags available. Create tags from the library page.
                   </p>
                 )}
@@ -231,12 +238,12 @@ export default function NewPromptPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="privacy">Privacy</Label>
+              <Label htmlFor="privacy" className="text-gray-300">Privacy</Label>
               <Select
                 onValueChange={(value: 'private' | 'shared' | 'public') => setValue('privacy', value)}
                 defaultValue="private"
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Select privacy level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -252,9 +259,9 @@ export default function NewPromptPage() {
                 type="checkbox"
                 id="isFavorite"
                 {...register('isFavorite')}
-                className="rounded border-gray-300"
+                className="rounded border-purple-500/30"
               />
-              <Label htmlFor="isFavorite" className="cursor-pointer">
+              <Label htmlFor="isFavorite" className="cursor-pointer text-gray-300">
                 Mark as favorite
               </Label>
             </div>
@@ -264,17 +271,22 @@ export default function NewPromptPage() {
         <div className="flex justify-end gap-4">
           <Button
             type="button"
-            variant="outline"
             onClick={() => router.back()}
             disabled={isSubmitting}
+            className="bg-white/5 hover:bg-white/10 text-white border-white/10"
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
+          >
             {isSubmitting ? 'Creating...' : 'Create Prompt'}
           </Button>
         </div>
       </form>
+      </div>
     </div>
   );
 }
