@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -224,9 +225,20 @@ export function PublicGalleryClient() {
                   {/* Metadata */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium">
-                        {prompt.user.name?.[0]?.toUpperCase() ?? "?"}
-                      </div>
+                      {prompt.user.avatarUrl ? (
+                        <div className="relative h-5 w-5 rounded-full overflow-hidden border border-border">
+                          <Image
+                            src={prompt.user.avatarUrl}
+                            alt={prompt.user.name ?? prompt.user.email}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium">
+                          {prompt.user.name?.[0]?.toUpperCase() ?? prompt.user.email?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                      )}
                       <span className="truncate max-w-[120px]">
                         {prompt.user.name ?? prompt.user.email}
                       </span>

@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signOut } from 'next-auth/react';
@@ -25,6 +26,9 @@ export default function DashboardPage() {
     enabled: status === 'authenticated',
   });
   const { data: sharedCount } = trpc.share.getSharedWithMeCount.useQuery(undefined, {
+    enabled: status === 'authenticated',
+  });
+  const { data: user } = trpc.user.me.useQuery(undefined, {
     enabled: status === 'authenticated',
   });
 
@@ -77,8 +81,19 @@ export default function DashboardPage() {
                 variant="ghost"
                 className="w-full sm:w-auto justify-start sm:justify-center"
               >
-                <User className="h-4 w-4 mr-2" />
-                <span className="truncate max-w-[150px]">{session.user.email}</span>
+                {user?.avatarUrl ? (
+                  <div className="relative h-4 w-4 rounded-full overflow-hidden mr-2">
+                    <Image
+                      src={user.avatarUrl}
+                      alt={session.user.name ?? session.user.email ?? 'User'}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <User className="h-4 w-4 mr-2" />
+                )}
+                <span className="truncate max-w-[150px]">{session.user.name ?? session.user.email}</span>
               </Button>
             </Link>
             <Button variant="outline" onClick={() => signOut()} className="w-full sm:w-auto">
