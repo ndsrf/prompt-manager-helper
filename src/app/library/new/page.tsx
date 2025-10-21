@@ -61,15 +61,16 @@ export default function NewPromptPage() {
     },
   });
 
+  // @ts-ignore - Type inference issue with tRPC
   const createPrompt = trpc.prompt.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: 'Prompt created',
         description: 'Your prompt has been created successfully.',
       });
       router.push(`/library/${data.id}`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
         description: error.message,

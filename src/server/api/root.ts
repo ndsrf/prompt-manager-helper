@@ -5,6 +5,7 @@ import { tagRouter } from './routers/tag';
 import { promptRouter } from './routers/prompt';
 import { aiRouter } from './routers/ai';
 import { templateRouter } from './routers/template';
+import { versionRouter } from './routers/version';
 
 export const appRouter = createTRPCRouter({
   user: userRouter,
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   prompt: promptRouter,
   ai: aiRouter,
   template: templateRouter,
+  version: versionRouter,
 });
 
 export type AppRouter = typeof appRouter;

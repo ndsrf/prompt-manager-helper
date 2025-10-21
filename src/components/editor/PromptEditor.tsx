@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { trpc } from '@/lib/trpc/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ import {
   Settings,
   Eye,
   Code,
+  Home,
+  Library,
 } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import { VariableManager } from './VariableManager';
@@ -24,6 +27,7 @@ import { TestInterface } from './TestInterface';
 import { MetadataPanel } from './MetadataPanel';
 import { PromptImprover } from './PromptImprover';
 import { VersionHistory } from './VersionHistory';
+import { VersionComparison } from './VersionComparison';
 import { MarkdownPreview } from './MarkdownPreview';
 import { PromptVariations } from './PromptVariations';
 import { VariableSuggester } from './VariableSuggester';
@@ -117,6 +121,22 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
+      {/* Navigation Links */}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/">
+            <Home className="h-4 w-4 mr-2" />
+            Home
+          </Link>
+        </Button>
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/library">
+            <Library className="h-4 w-4 mr-2" />
+            Library
+          </Link>
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="flex-1 w-full sm:w-auto">
@@ -166,8 +186,15 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
             <VersionHistory
               promptId={prompt.id}
               currentContent={content}
-              onRestore={(restoredContent) => setContent(restoredContent)}
+              currentTitle={title}
+              onRestore={(restoredContent, restoredTitle) => {
+                setContent(restoredContent);
+                setTitle(restoredTitle);
+              }}
             />
+          </div>
+          <div className="hidden sm:block">
+            <VersionComparison promptId={prompt.id} />
           </div>
           <Button
             size="sm"
