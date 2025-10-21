@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signOut } from 'next-auth/react';
 import { trpc } from '@/lib/trpc/client';
-import { Library } from 'lucide-react';
+import { Library, Globe } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -21,6 +21,9 @@ export default function DashboardPage() {
     enabled: status === 'authenticated',
   });
   const { data: tags } = trpc.tag.getAll.useQuery(undefined, {
+    enabled: status === 'authenticated',
+  });
+  const { data: sharedCount } = trpc.share.getSharedWithMeCount.useQuery(undefined, {
     enabled: status === 'authenticated',
   });
 
@@ -60,6 +63,14 @@ export default function DashboardPage() {
               <Library className="h-4 w-4 mr-2" />
               Library
             </Button>
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/gallery')}
+              className="w-full sm:w-auto justify-start sm:justify-center"
+            >
+              <Globe className="h-4 w-4 mr-2" />
+              Gallery
+            </Button>
             <span className="text-sm text-muted-foreground truncate max-w-full sm:max-w-xs">
               {session.user.email}
             </span>
@@ -92,6 +103,11 @@ export default function DashboardPage() {
             <CardContent>
               <p className="text-2xl font-bold">{totalPrompts}</p>
               <p className="text-sm text-muted-foreground">Total prompts</p>
+              {sharedCount !== undefined && sharedCount > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {sharedCount} shared with me
+                </p>
+              )}
             </CardContent>
           </Card>
 

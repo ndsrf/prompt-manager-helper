@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { trpc } from '@/lib/trpc/client';
 import { PromptEditor } from '@/components/editor/PromptEditor';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,6 +10,7 @@ import { Card } from '@/components/ui/card';
 export default function EditorPage() {
   const params = useParams();
   const promptId = params.id as string;
+  const { data: session } = useSession();
 
   const { data: prompt, isLoading, error } = trpc.prompt.getById.useQuery({
     id: promptId,
@@ -50,7 +52,7 @@ export default function EditorPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <PromptEditor prompt={prompt} />
+      <PromptEditor prompt={prompt} userId={session?.user?.id} />
     </div>
   );
 }

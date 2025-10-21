@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Star, Edit, Trash2, Copy, ArrowLeft, Calendar, Folder, History } from 'lucide-react';
+import { Star, Copy, ArrowLeft, Calendar, Folder, History, User, BookmarkPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,37 +10,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc/client';
 import { toast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
-import { ShareDialog } from '@/components/sharing/ShareDialog';
 
-interface PromptViewPageProps {
+interface SharedPromptViewPageProps {
   params: {
     id: string;
   };
 }
 
-export default function PromptViewPage({ params }: PromptViewPageProps) {
+export default function SharedPromptViewPage({ params }: SharedPromptViewPageProps) {
   const { id } = params;
   const router = useRouter();
 
-  const { data: prompt, isLoading, refetch } = trpc.prompt.getById.useQuery({ id });
-
-  const toggleFavorite = trpc.prompt.toggleFavorite.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Updated',
-        description: 'Favorite status updated.',
-      });
-      refetch();
-    },
+  // We need to fetch the prompt through the shared prompts query
+  const { data: sharedPrompts, isLoading, refetch } = trpc.share.getSharedWithMe.useQuery({
+    limit: 100,
   });
 
-  const deletePrompt = trpc.prompt.delete.useMutation({
-    onSuccess: () => {
+  // Find the specific prompt from the shared prompts list
+  const prompt = sharedPrompts?.items?.find((p: any) => p.id === id);
+
+  const copyToLibrary = trpc.prompt.copySharedToLibrary.useMutation({
+    onSuccess: (copiedPrompt) => {
       toast({
-        title: 'Prompt deleted',
-        description: 'The prompt has been moved to trash.',
+        title: 'Added to library',
+        description: 'The prompt has been copied to your library.',
       });
-      router.push('/library');
+      router.push(`/library/${copiedPrompt.id}`);
     },
     onError: (error) => {
       toast({
@@ -51,17 +46,12 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
     },
   });
 
-  const handleToggleFavorite = async () => {
-    await toggleFavorite.mutateAsync({ id });
-  };
-
-  const handleEdit = () => {
-    router.push(`/editor/${id}`);
-  };
-
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this prompt? You can restore it from trash.')) {
-      await deletePrompt.mutateAsync({ id });
+  const handleCopyToLibrary = async () => {
+    if (prompt) {
+      await copyToLibrary.mutateAsync({
+        promptId: prompt.id,
+        folderId: null,
+      });
     }
   };
 
@@ -89,7 +79,7 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
     return (
       <div className="container mx-auto py-6 max-w-4xl">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Prompt not found.</p>
+          <p className="text-muted-foreground">Shared prompt not found.</p>
           <Button onClick={() => router.push('/library')} className="mt-4">
             Go to Library
           </Button>
@@ -112,7 +102,12 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{prompt.title}</h1>
+            <div className="flex items-center gap-2 mb-2">
+              <h1 className="text-3xl font-bold">{prompt.title}</h1>
+              <Badge variant="secondary" className="text-xs">
+                Shared
+              </Badge>
+            </div>
             {prompt.description && (
               <p className="text-muted-foreground">{prompt.description}</p>
             )}
@@ -120,34 +115,28 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
 
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              onClick={handleToggleFavorite}
-              className={prompt.isFavorite ? 'text-yellow-500' : ''}
+              onClick={handleCopyToLibrary}
+              disabled={copyToLibrary.isPending}
             >
-              <Star className={`h-4 w-4 mr-2 ${prompt.isFavorite ? 'fill-current' : ''}`} />
-              {prompt.isFavorite ? 'Favorited' : 'Favorite'}
+              <BookmarkPlus className="h-4 w-4 mr-2" />
+              {copyToLibrary.isPending ? 'Adding...' : 'Copy to My Library'}
             </Button>
             <Button variant="outline" size="sm" onClick={handleCopy}>
               <Copy className="h-4 w-4 mr-2" />
-              Copy
-            </Button>
-            <ShareDialog
-              promptId={id}
-              promptTitle={prompt.title}
-              currentPrivacy={prompt.privacy as "private" | "shared" | "public"}
-            />
-            <Button variant="outline" size="sm" onClick={handleEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+              Copy Content
             </Button>
           </div>
         </div>
 
         <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
+          {prompt.user && (
+            <div className="flex items-center gap-1">
+              <User className="h-4 w-4" />
+              <span>By {prompt.user.name || prompt.user.email}</span>
+            </div>
+          )}
           {prompt.folder && (
             <div className="flex items-center gap-1">
               <Folder className="h-4 w-4" />
@@ -158,26 +147,25 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
             <Calendar className="h-4 w-4" />
             <span>Updated {formatDistanceToNow(new Date(prompt.updatedAt), { addSuffix: true })}</span>
           </div>
-          {prompt._count.versions > 0 && (
-            <div className="flex items-center gap-1">
-              <History className="h-4 w-4" />
-              <span>{prompt._count.versions} versions</span>
-            </div>
+          {prompt.permission && (
+            <Badge variant="outline" className="text-xs">
+              {prompt.permission} access
+            </Badge>
           )}
         </div>
 
-        {prompt.tags.length > 0 && (
+        {prompt.tags && prompt.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
-            {prompt.tags.map((pt: any) => (
+            {prompt.tags.map((tag: any) => (
               <Badge
-                key={pt.tag.id}
+                key={tag.id}
                 variant="outline"
                 style={{
-                  borderColor: pt.tag.color || undefined,
-                  color: pt.tag.color || undefined,
+                  borderColor: tag.color || undefined,
+                  color: tag.color || undefined,
                 }}
               >
-                {pt.tag.name}
+                {tag.name}
               </Badge>
             ))}
           </div>
@@ -217,46 +205,11 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
                 <span className="ml-2 text-muted-foreground">{prompt.usageCount}</span>
               </div>
               <div>
-                <span className="font-medium">Created:</span>
+                <span className="font-medium">Shared:</span>
                 <span className="ml-2 text-muted-foreground">
-                  {formatDistanceToNow(new Date(prompt.createdAt), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(prompt.sharedAt), { addSuffix: true })}
                 </span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {prompt.versions && prompt.versions.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Recent Versions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {prompt.versions.slice(0, 5).map((version: any) => (
-                <div
-                  key={version.id}
-                  className="flex items-center justify-between p-3 border rounded-md"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Version {version.versionNumber}</span>
-                      {version.isSnapshot && (
-                        <Badge variant="secondary" className="text-xs">Snapshot</Badge>
-                      )}
-                    </div>
-                    {version.changesSummary && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {version.changesSummary}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(new Date(version.createdAt), { addSuffix: true })}
-                  </div>
-                </div>
-              ))}
             </div>
           </CardContent>
         </Card>

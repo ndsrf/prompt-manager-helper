@@ -38,7 +38,9 @@ export const promptRouter = createTRPCRouter({
       };
 
       // Filter by folder
-      if (input.folderId !== undefined) {
+      // Only filter if folderId is explicitly provided (not null or undefined)
+      // null means show all prompts regardless of folder
+      if (input.folderId !== undefined && input.folderId !== null) {
         where.folderId = input.folderId;
       }
 
@@ -135,7 +137,10 @@ export const promptRouter = createTRPCRouter({
       const prompt = await ctx.prisma.prompt.findFirst({
         where: {
           id: input.id,
-          userId: ctx.session.user.id,
+          OR: [
+            { userId: ctx.session.user.id },
+            { privacy: 'public' },
+          ],
           isDeleted: false,
         },
         include: {
@@ -890,5 +895,355 @@ export const promptRouter = createTRPCRouter({
       });
 
       return versions;
+    }),
+
+  // Get public prompts for the gallery
+  getPublic: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      tagIds: z.array(z.string().uuid()).optional(),
+      targetLlm: z.string().optional(),
+      sortBy: z.enum(['name', 'createdAt', 'updatedAt', 'usageCount']).default('updatedAt'),
+      sortOrder: z.enum(['asc', 'desc']).default('desc'),
+      limit: z.number().min(1).max(100).default(20),
+      cursor: z.string().uuid().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const where: Prisma.PromptWhereInput = {
+        privacy: 'public',
+        isDeleted: false,
+      };
+
+      // Search
+      if (input.search) {
+        where.OR = [
+          { title: { contains: input.search, mode: 'insensitive' } },
+          { description: { contains: input.search, mode: 'insensitive' } },
+          { content: { contains: input.search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Filter by tags
+      if (input.tagIds && input.tagIds.length > 0) {
+        where.tags = {
+          some: {
+            tagId: {
+              in: input.tagIds,
+            },
+          },
+        };
+      }
+
+      // Filter by target LLM
+      if (input.targetLlm) {
+        where.targetLlm = input.targetLlm;
+      }
+
+      // Determine sort field
+      let orderBy: Prisma.PromptOrderByWithRelationInput;
+      switch (input.sortBy) {
+        case 'name':
+          orderBy = { title: input.sortOrder };
+          break;
+        case 'createdAt':
+          orderBy = { createdAt: input.sortOrder };
+          break;
+        case 'updatedAt':
+          orderBy = { updatedAt: input.sortOrder };
+          break;
+        case 'usageCount':
+          orderBy = { usageCount: input.sortOrder };
+          break;
+        default:
+          orderBy = { updatedAt: input.sortOrder };
+      }
+
+      const prompts = await ctx.prisma.prompt.findMany({
+        where,
+        take: input.limit + 1,
+        cursor: input.cursor ? { id: input.cursor } : undefined,
+        orderBy,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+          _count: {
+            select: {
+              comments: true,
+            },
+          },
+        },
+      });
+
+      let nextCursor: string | undefined = undefined;
+      if (prompts.length > input.limit) {
+        const nextItem = prompts.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return {
+        items: prompts.map(p => ({
+          ...p,
+          tags: p.tags.map(pt => pt.tag),
+        })),
+        nextCursor,
+      };
+    }),
+
+  // Copy a shared prompt to user's library
+  copyFromShare: protectedProcedure
+    .input(z.object({
+      shareToken: z.string(),
+      folderId: z.string().uuid().optional().nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Get the shared prompt
+      const share = await ctx.prisma.promptShare.findUnique({
+        where: { shareToken: input.shareToken },
+        include: {
+          prompt: {
+            include: {
+              tags: {
+                include: {
+                  tag: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!share) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Share link not found',
+        });
+      }
+
+      // Check if expired
+      if (share.expiresAt && share.expiresAt < new Date()) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'This share link has expired',
+        });
+      }
+
+      // Check if prompt is deleted
+      if (share.prompt.isDeleted) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'This prompt is no longer available',
+        });
+      }
+
+      // Check if user already owns this prompt
+      if (share.prompt.userId === userId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'You already own this prompt',
+        });
+      }
+
+      // Verify folder exists if provided
+      if (input.folderId) {
+        const folder = await ctx.prisma.folder.findFirst({
+          where: {
+            id: input.folderId,
+            userId,
+          },
+        });
+
+        if (!folder) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Folder not found',
+          });
+        }
+      }
+
+      // Create a copy of the prompt for the user
+      const copiedPrompt = await ctx.prisma.prompt.create({
+        data: {
+          title: `${share.prompt.title} (Copy)`,
+          description: share.prompt.description,
+          content: share.prompt.content,
+          variables: share.prompt.variables as any,
+          targetLlm: share.prompt.targetLlm,
+          folderId: input.folderId,
+          privacy: 'private', // Always copy as private
+          isFavorite: false,
+          userId,
+        },
+        include: {
+          folder: true,
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+      });
+
+      // Create initial version for the copied prompt
+      await ctx.prisma.promptVersion.create({
+        data: {
+          promptId: copiedPrompt.id,
+          versionNumber: 1,
+          title: copiedPrompt.title,
+          content: copiedPrompt.content,
+          variables: copiedPrompt.variables as any,
+          changesSummary: `Copied from shared prompt by ${share.prompt.userId}`,
+          isSnapshot: true,
+          createdBy: userId,
+        },
+      });
+
+      // Log activity
+      await ctx.prisma.activityLog.create({
+        data: {
+          userId,
+          action: 'copied_from_share',
+          entityType: 'prompt',
+          entityId: copiedPrompt.id,
+          metadata: {
+            originalPromptId: share.prompt.id,
+            shareToken: input.shareToken,
+            title: copiedPrompt.title,
+          },
+        },
+      });
+
+      return copiedPrompt;
+    }),
+
+  // Copy a shared prompt to user's library
+  copySharedToLibrary: protectedProcedure
+    .input(z.object({
+      promptId: z.string().uuid(),
+      folderId: z.string().uuid().optional().nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // First verify this prompt is shared with the user
+      const share = await ctx.prisma.promptShare.findFirst({
+        where: {
+          promptId: input.promptId,
+          sharedWithId: userId,
+        },
+        include: {
+          prompt: {
+            include: {
+              tags: {
+                include: {
+                  tag: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!share) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Shared prompt not found or you do not have access',
+        });
+      }
+
+      // Check if prompt is deleted
+      if (share.prompt.isDeleted) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'This prompt is no longer available',
+        });
+      }
+
+      // Verify folder exists if provided
+      if (input.folderId) {
+        const folder = await ctx.prisma.folder.findFirst({
+          where: {
+            id: input.folderId,
+            userId,
+          },
+        });
+
+        if (!folder) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Folder not found',
+          });
+        }
+      }
+
+      // Create a copy of the prompt for the user
+      const copiedPrompt = await ctx.prisma.prompt.create({
+        data: {
+          title: share.prompt.title,
+          description: share.prompt.description,
+          content: share.prompt.content,
+          variables: share.prompt.variables as any,
+          targetLlm: share.prompt.targetLlm,
+          folderId: input.folderId,
+          privacy: 'private', // Always copy as private
+          isFavorite: false,
+          userId,
+        },
+        include: {
+          folder: true,
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+      });
+
+      // Create initial version for the copied prompt
+      await ctx.prisma.promptVersion.create({
+        data: {
+          promptId: copiedPrompt.id,
+          versionNumber: 1,
+          title: copiedPrompt.title,
+          content: copiedPrompt.content,
+          variables: copiedPrompt.variables as any,
+          changesSummary: `Copied from shared prompt`,
+          isSnapshot: true,
+          createdBy: userId,
+        },
+      });
+
+      // Remove the share (no longer needs to be in shared list)
+      await ctx.prisma.promptShare.delete({
+        where: { id: share.id },
+      });
+
+      // Log activity
+      await ctx.prisma.activityLog.create({
+        data: {
+          userId,
+          action: 'copied_from_share',
+          entityType: 'prompt',
+          entityId: copiedPrompt.id,
+          metadata: {
+            originalPromptId: share.prompt.id,
+            title: copiedPrompt.title,
+          },
+        },
+      });
+
+      return copiedPrompt;
     }),
 });

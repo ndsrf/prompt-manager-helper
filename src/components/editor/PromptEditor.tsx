@@ -19,6 +19,7 @@ import {
   Code,
   Home,
   Library,
+  Share2,
 } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import { VariableManager } from './VariableManager';
@@ -31,6 +32,8 @@ import { VersionComparison } from './VersionComparison';
 import { MarkdownPreview } from './MarkdownPreview';
 import { PromptVariations } from './PromptVariations';
 import { VariableSuggester } from './VariableSuggester';
+import { ShareDialog } from '../sharing/ShareDialog';
+import { CommentSection } from '../sharing/CommentSection';
 
 interface Prompt {
   id: string;
@@ -47,9 +50,10 @@ interface Prompt {
 
 interface PromptEditorProps {
   prompt: Prompt;
+  userId?: string;
 }
 
-export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
+export function PromptEditor({ prompt: initialPrompt, userId }: PromptEditorProps) {
   const { toast } = useToast();
   const [prompt, setPrompt] = useState(initialPrompt);
   const [title, setTitle] = useState(initialPrompt.title);
@@ -196,6 +200,13 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
           <div className="hidden sm:block">
             <VersionComparison promptId={prompt.id} />
           </div>
+          <div className="hidden sm:block">
+            <ShareDialog
+              promptId={prompt.id}
+              promptTitle={title}
+              currentPrivacy={prompt.privacy as any}
+            />
+          </div>
           <Button
             size="sm"
             onClick={handleSave}
@@ -297,6 +308,14 @@ export function PromptEditor({ prompt: initialPrompt }: PromptEditorProps) {
         open={showTestInterface}
         onClose={() => setShowTestInterface(false)}
       />
+
+      {/* Comments Section */}
+      {userId && (
+        <div className="mt-8">
+          <Separator className="mb-6" />
+          <CommentSection promptId={prompt.id} currentUserId={userId} />
+        </div>
+      )}
     </div>
   );
 }

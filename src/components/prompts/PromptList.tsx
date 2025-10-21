@@ -30,13 +30,35 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
 
   console.log('[PromptList] Component rendered with props:', { folderId, tagIds, search });
 
-  const { data, isLoading, error, refetch } = trpc.prompt.getAll.useQuery({
-    folderId: folderId === null ? null : folderId,
-    tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
-    search: search || undefined,
-    sortBy: 'updatedAt',
-    sortOrder: 'desc',
-  });
+  // Use different query based on whether we're viewing shared prompts
+  const isSharedView = folderId === 'shared';
+
+  const { data: regularData, isLoading: regularLoading, error: regularError, refetch: regularRefetch } = trpc.prompt.getAll.useQuery(
+    {
+      folderId: folderId === null ? null : folderId,
+      tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
+      search: search || undefined,
+      sortBy: 'updatedAt',
+      sortOrder: 'desc',
+    },
+    { enabled: !isSharedView }
+  );
+
+  const { data: sharedData, isLoading: sharedLoading, error: sharedError, refetch: sharedRefetch } = trpc.share.getSharedWithMe.useQuery(
+    {
+      limit: 100,
+      search: search || undefined,
+    },
+    { enabled: isSharedView }
+  );
+
+  // Unify the data format
+  const data = isSharedView
+    ? { prompts: sharedData?.items || [] }
+    : regularData;
+  const isLoading = isSharedView ? sharedLoading : regularLoading;
+  const error = isSharedView ? sharedError : regularError;
+  const refetch = isSharedView ? sharedRefetch : regularRefetch;
 
   console.log('[PromptList] Query state:', {
     isLoading,
@@ -79,7 +101,11 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
   };
 
   const handleView = (promptId: string) => {
-    router.push(`/library/${promptId}`);
+    if (isSharedView) {
+      router.push(`/shared-prompt/${promptId}`);
+    } else {
+      router.push(`/library/${promptId}`);
+    }
   };
 
   const handleDelete = async (promptId: string) => {
@@ -150,16 +176,18 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-semibold text-base sm:text-lg truncate">{prompt.title}</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-6 w-6 p-0 flex-shrink-0 ${
-                    prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground sm:opacity-0 group-hover:opacity-100'
-                  }`}
-                  onClick={(e) => handleToggleFavorite(e, prompt.id)}
-                >
-                  <Star className={`h-4 w-4 ${prompt.isFavorite ? 'fill-current' : ''}`} />
-                </Button>
+                {!isSharedView && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 w-6 p-0 flex-shrink-0 ${
+                      prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground sm:opacity-0 group-hover:opacity-100'
+                    }`}
+                    onClick={(e) => handleToggleFavorite(e, prompt.id)}
+                  >
+                    <Star className={`h-4 w-4 ${prompt.isFavorite ? 'fill-current' : ''}`} />
+                  </Button>
+                )}
               </div>
 
               {prompt.description && (
@@ -185,21 +213,25 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
                 )}
               </div>
 
-              {prompt.tags.length > 0 && (
+              {prompt.tags && prompt.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2 sm:mt-3">
-                  {prompt.tags.slice(0, 3).map((pt: any) => (
-                    <Badge
-                      key={pt.tag.id}
-                      variant="outline"
-                      className="text-xs"
-                      style={{
-                        borderColor: pt.tag.color || undefined,
-                        color: pt.tag.color || undefined,
-                      }}
-                    >
-                      {pt.tag.name}
-                    </Badge>
-                  ))}
+                  {prompt.tags.slice(0, 3).map((pt: any) => {
+                    // Handle both direct tag objects and nested tag structures
+                    const tag = pt.tag || pt;
+                    return (
+                      <Badge
+                        key={tag.id}
+                        variant="outline"
+                        className="text-xs"
+                        style={{
+                          borderColor: tag.color || undefined,
+                          color: tag.color || undefined,
+                        }}
+                      >
+                        {tag.name}
+                      </Badge>
+                    );
+                  })}
                   {prompt.tags.length > 3 && (
                     <Badge variant="outline" className="text-xs">
                       +{prompt.tags.length - 3}
@@ -216,22 +248,28 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleEdit(prompt.id)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
+                {!isSharedView && (
+                  <DropdownMenuItem onClick={() => handleEdit(prompt.id)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => handleCopy(prompt)}>
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Content
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => handleDelete(prompt.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
+                {!isSharedView && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleDelete(prompt.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

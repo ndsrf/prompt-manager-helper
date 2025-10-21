@@ -1546,6 +1546,17 @@ CREATE TABLE activity_log (
 - Monitoring and backups
 - Public launch
 
+### Phase 12: Extra features (Week 28)
+
+**Goals**: Add functionality to make it easier for users to use the application
+
+**Tasks**:
+1. Create a user profile page to select avatar, username, bio
+2. Add "Custom instructions" to the profile page, to add details you want the AI to know about you and specify how you would like it to format its responses.
+
+**Deliverables**:
+- User profile page
+
 ---
 
 ## Deployment Strategy

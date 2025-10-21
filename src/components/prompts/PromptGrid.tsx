@@ -30,13 +30,35 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
 
   console.log('[PromptGrid] Component rendered with props:', { folderId, tagIds, search });
 
-  const { data, isLoading, error, refetch } = trpc.prompt.getAll.useQuery({
-    folderId: folderId === null ? null : folderId,
-    tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
-    search: search || undefined,
-    sortBy: 'updatedAt',
-    sortOrder: 'desc',
-  });
+  // Use different query based on whether we're viewing shared prompts
+  const isSharedView = folderId === 'shared';
+
+  const { data: regularData, isLoading: regularLoading, error: regularError, refetch: regularRefetch } = trpc.prompt.getAll.useQuery(
+    {
+      folderId: folderId === null ? null : folderId,
+      tagIds: tagIds && tagIds.length > 0 ? tagIds : undefined,
+      search: search || undefined,
+      sortBy: 'updatedAt',
+      sortOrder: 'desc',
+    },
+    { enabled: !isSharedView }
+  );
+
+  const { data: sharedData, isLoading: sharedLoading, error: sharedError, refetch: sharedRefetch } = trpc.share.getSharedWithMe.useQuery(
+    {
+      limit: 100,
+      search: search || undefined,
+    },
+    { enabled: isSharedView }
+  );
+
+  // Unify the data format
+  const data = isSharedView
+    ? { prompts: sharedData?.items || [] }
+    : regularData;
+  const isLoading = isSharedView ? sharedLoading : regularLoading;
+  const error = isSharedView ? sharedError : regularError;
+  const refetch = isSharedView ? sharedRefetch : regularRefetch;
 
   console.log('[PromptGrid] Query state:', {
     isLoading,
@@ -79,7 +101,11 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
   };
 
   const handleView = (promptId: string) => {
-    router.push(`/library/${promptId}`);
+    if (isSharedView) {
+      router.push(`/shared-prompt/${promptId}`);
+    } else {
+      router.push(`/library/${promptId}`);
+    }
   };
 
   const handleDelete = async (promptId: string) => {
@@ -154,16 +180,18 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
             <div className="flex items-start justify-between gap-2">
               <CardTitle className="text-lg line-clamp-1">{prompt.title}</CardTitle>
               <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-6 w-6 p-0 ${
-                    prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground opacity-0 group-hover:opacity-100'
-                  }`}
-                  onClick={(e) => handleToggleFavorite(e, prompt.id)}
-                >
-                  <Star className={`h-4 w-4 ${prompt.isFavorite ? 'fill-current' : ''}`} />
-                </Button>
+                {!isSharedView && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 w-6 p-0 ${
+                      prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground opacity-0 group-hover:opacity-100'
+                    }`}
+                    onClick={(e) => handleToggleFavorite(e, prompt.id)}
+                  >
+                    <Star className={`h-4 w-4 ${prompt.isFavorite ? 'fill-current' : ''}`} />
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                     <Button
@@ -175,22 +203,28 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(prompt.id)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
+                    {!isSharedView && (
+                      <DropdownMenuItem onClick={() => handleEdit(prompt.id)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => handleCopy(prompt)}>
                       <Copy className="h-4 w-4 mr-2" />
                       Copy Content
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(prompt.id)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
+                    {!isSharedView && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(prompt.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

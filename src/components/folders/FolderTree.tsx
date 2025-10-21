@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, Folder, FolderOpen, MoreHorizontal, Plus } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, FolderOpen, MoreHorizontal, Plus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,6 +37,7 @@ export function FolderTree({ selectedFolderId, onSelectFolder }: FolderTreeProps
   const [parentFolderId, setParentFolderId] = useState<string | undefined>(undefined);
 
   const { data: folders, isLoading, refetch } = trpc.folder.getTree.useQuery();
+  const { data: sharedCount } = trpc.share.getSharedWithMeCount.useQuery();
   const deleteFolder = trpc.folder.delete.useMutation({
     onSuccess: () => {
       toast({
@@ -220,6 +221,19 @@ export function FolderTree({ selectedFolderId, onSelectFolder }: FolderTreeProps
           No folders yet. Click + to create one.
         </p>
       )}
+
+      <div
+        className={`flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent cursor-pointer ${
+          selectedFolderId === 'shared' ? 'bg-accent' : ''
+        }`}
+        onClick={() => onSelectFolder('shared')}
+      >
+        <Users className="h-4 w-4 text-purple-500" />
+        <span className="text-sm">Shared with me</span>
+        {sharedCount !== undefined && sharedCount > 0 && (
+          <span className="text-xs text-muted-foreground ml-auto">{sharedCount}</span>
+        )}
+      </div>
 
       <FolderDialog
         open={folderDialogOpen}

@@ -18,6 +18,12 @@ export default function Home() {
             Go to Library
           </Link>
           <Link
+            href="/gallery"
+            className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition text-center"
+          >
+            Public Gallery
+          </Link>
+          <Link
             href="/auth/login"
             className="px-6 py-3 border border-border rounded-lg hover:bg-secondary transition text-center"
           >

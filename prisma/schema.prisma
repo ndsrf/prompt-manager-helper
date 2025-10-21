@@ -286,20 +286,21 @@ model PromptVersion {
 
 // Prompt sharing
 model PromptShare {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  promptId   String    @map("prompt_id") @db.Uuid
-  sharedBy   String    @map("shared_by") @db.Uuid
-  sharedWith String?   @map("shared_with") @db.Uuid
-  shareToken String    @default(dbgenerated("gen_random_uuid()")) @map("share_token") @db.Uuid
-  permission String    @db.VarChar(20)
-  expiresAt  DateTime? @map("expires_at") @db.Timestamp(6)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId     String    @map("prompt_id") @db.Uuid
+  sharedById   String    @map("shared_by") @db.Uuid
+  sharedWithId String?   @map("shared_with") @db.Uuid
+  shareToken   String    @unique @default(dbgenerated("gen_random_uuid()")) @map("share_token") @db.Uuid
+  permission   String    @db.VarChar(20)
+  expiresAt    DateTime? @map("expires_at") @db.Timestamp(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
 
-  prompt   Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
-  sharer   User   @relation("SharedBy", fields: [sharedBy], references: [id], onDelete: Cascade)
-  receiver User?  @relation("SharedWith", fields: [sharedWith], references: [id], onDelete: Cascade)
+  prompt     Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  sharedBy   User   @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+  sharedWith User?  @relation("SharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
 
-  @@index([sharedWith])
+  @@unique([promptId, sharedWithId])
+  @@index([sharedWithId])
   @@index([shareToken])
   @@index([promptId])
   @@map("prompt_shares")
