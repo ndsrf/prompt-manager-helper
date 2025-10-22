@@ -47,7 +47,7 @@
     ],
     "host_permissions": [
       "http://localhost:3000/*",
-      "https://*/*"
+      "https://prompteasy.ndsrf.com/*"
     ]
   }
 }
