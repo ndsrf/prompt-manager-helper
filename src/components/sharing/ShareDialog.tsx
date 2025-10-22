@@ -233,8 +233,8 @@ export function ShareDialog({
       <DialogTrigger asChild>
         {trigger ?? (
           <Button variant="outline" size="sm">
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
+            <Share2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Share</span>
           </Button>
         )}
       </DialogTrigger>

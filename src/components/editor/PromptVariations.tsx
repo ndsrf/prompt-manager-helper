@@ -95,9 +95,9 @@ export function PromptVariations({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <FlaskConical className="h-4 w-4 mr-2" />
-          A/B Test Variations
-          <Badge variant="secondary" className="ml-2">
+          <FlaskConical className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">A/B Test Variations</span>
+          <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
             Pro
           </Badge>
         </Button>

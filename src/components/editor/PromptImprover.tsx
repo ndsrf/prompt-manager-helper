@@ -96,10 +96,10 @@ export function PromptImprover({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" disabled={!canUseAi}>
-          <Sparkles className="h-4 w-4 mr-2" />
-          Improve
+          <Sparkles className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Improve</span>
           {usageStats && !usageStats.unlimited && (
-            <Badge variant="secondary" className="ml-2">
+            <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
               {usageStats.remaining}/{usageStats.limit}
             </Badge>
           )}

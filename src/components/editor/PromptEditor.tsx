@@ -134,7 +134,7 @@ export function PromptEditor({ prompt: initialPrompt, userId }: PromptEditorProp
       {/* Navigation Links */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/">
+          <Link href="/dashboard">
             <Home className="h-4 w-4 mr-2" />
             Home
           </Link>
@@ -177,42 +177,32 @@ export function PromptEditor({ prompt: initialPrompt, userId }: PromptEditorProp
             <TestTube2 className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Test</span>
           </Button>
-          <div className="hidden sm:block">
-            <PromptImprover
-              promptId={prompt.id}
-              content={content}
-              targetLlm={prompt.targetLlm}
-              onApply={(improvedContent) => setContent(improvedContent)}
-            />
-          </div>
-          <div className="hidden sm:block">
-            <PromptVariations
-              content={content}
-              targetLlm={prompt.targetLlm}
-              onApply={(variation) => setContent(variation)}
-            />
-          </div>
-          <div className="hidden sm:block">
-            <VersionHistory
-              promptId={prompt.id}
-              currentContent={content}
-              currentTitle={title}
-              onRestore={(restoredContent, restoredTitle) => {
-                setContent(restoredContent);
-                setTitle(restoredTitle);
-              }}
-            />
-          </div>
-          <div className="hidden sm:block">
-            <VersionComparison promptId={prompt.id} />
-          </div>
-          <div className="hidden sm:block">
-            <ShareDialog
-              promptId={prompt.id}
-              promptTitle={title}
-              currentPrivacy={prompt.privacy as any}
-            />
-          </div>
+          <PromptImprover
+            promptId={prompt.id}
+            content={content}
+            targetLlm={prompt.targetLlm}
+            onApply={(improvedContent) => setContent(improvedContent)}
+          />
+          <PromptVariations
+            content={content}
+            targetLlm={prompt.targetLlm}
+            onApply={(variation) => setContent(variation)}
+          />
+          <VersionHistory
+            promptId={prompt.id}
+            currentContent={content}
+            currentTitle={title}
+            onRestore={(restoredContent, restoredTitle) => {
+              setContent(restoredContent);
+              setTitle(restoredTitle);
+            }}
+          />
+          <VersionComparison promptId={prompt.id} />
+          <ShareDialog
+            promptId={prompt.id}
+            promptTitle={title}
+            currentPrivacy={prompt.privacy as any}
+          />
           <Button
             size="sm"
             onClick={handleSave}

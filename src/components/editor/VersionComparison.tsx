@@ -98,8 +98,8 @@ export function VersionComparison({ promptId }: VersionComparisonProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <GitCompare className="h-4 w-4 mr-2" />
-          Compare Versions
+          <GitCompare className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Compare Versions</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">

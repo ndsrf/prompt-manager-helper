@@ -187,8 +187,8 @@ export function VersionHistory({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm">
-            <History className="h-4 w-4 mr-2" />
-            History
+            <History className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">History</span>
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
