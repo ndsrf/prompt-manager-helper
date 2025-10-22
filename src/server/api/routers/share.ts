@@ -171,9 +171,12 @@ export const shareRouter = createTRPCRouter({
         },
       });
 
+      // Use NEXT_PUBLIC_APP_URL if available, otherwise fall back to NEXTAUTH_URL
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL;
+
       return {
         shareToken: share.shareToken,
-        shareUrl: `${process.env.NEXTAUTH_URL}/shared/${share.shareToken}`,
+        shareUrl: `${baseUrl}/shared/${share.shareToken}`,
         expiresAt,
       };
     }),
@@ -216,6 +219,9 @@ export const shareRouter = createTRPCRouter({
         orderBy: { createdAt: "desc" },
       });
 
+      // Use NEXT_PUBLIC_APP_URL if available, otherwise fall back to NEXTAUTH_URL
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL;
+
       return shares.map((share) => ({
         id: share.id,
         permission: share.permission,
@@ -225,7 +231,7 @@ export const shareRouter = createTRPCRouter({
         shareToken: share.sharedWithId === null ? share.shareToken : null,
         shareUrl:
           share.sharedWithId === null
-            ? `${process.env.NEXTAUTH_URL}/shared/${share.shareToken}`
+            ? `${baseUrl}/shared/${share.shareToken}`
             : null,
         sharedWith: share.sharedWith,
       }));

@@ -29,7 +29,7 @@ const LLM_CONFIGS: LLMConfig[] = [
   },
   {
     name: 'copilot',
-    inputSelector: 'textarea[aria-label="Ask me anything..."]',
+    inputSelector: '#userInput, textarea[placeholder*="Copilot"], textarea[data-testid="composer-input"], textarea[aria-label="Ask me anything..."]',
     buttonInsertSelector: '.controls',
     sendButtonSelector: 'button[aria-label="Submit"]',
   },
