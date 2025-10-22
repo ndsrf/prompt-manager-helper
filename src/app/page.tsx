@@ -176,6 +176,25 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="relative z-10 py-8 px-4 sm:px-6 lg:px-8 border-t border-white/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} PromptEasy. All rights reserved.
+            </p>
+            <div className="flex gap-6">
+              <Link
+                href="/privacy"
+                className="text-gray-400 hover:text-purple-400 transition-colors text-sm"
+              >
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
