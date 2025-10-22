@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ExtensionTokens } from '@/components/settings/ExtensionTokens';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -257,6 +258,19 @@ export default function ProfilePage() {
                 {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Extension Tokens Section */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Chrome Extension</CardTitle>
+            <CardDescription>
+              Manage tokens for connecting the Chrome extension
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExtensionTokens />
           </CardContent>
         </Card>
       </main>

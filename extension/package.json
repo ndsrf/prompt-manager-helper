@@ -1,0 +1,53 @@
+{
+  "name": "prompteasy-extension",
+  "displayName": "PromptEasy - AI Prompt Manager",
+  "version": "1.0.0",
+  "description": "Manage and use your AI prompts across ChatGPT, Claude, Gemini and more",
+  "author": "PromptEasy",
+  "license": "MIT",
+  "packageManager": "pnpm@10.18.3",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "build:chrome": "plasmo build --target=chrome-mv3",
+    "build:edge": "plasmo build --target=edge-mv3",
+    "package": "plasmo package"
+  },
+  "keywords": [
+    "prompt",
+    "ai",
+    "chatgpt",
+    "claude",
+    "gemini",
+    "productivity"
+  ],
+  "devDependencies": {
+    "@types/chrome": "^0.1.24",
+    "@types/node": "^24.9.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "autoprefixer": "^10.4.21",
+    "plasmo": "^0.90.5",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.546.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.12"
+  },
+  "manifest": {
+    "permissions": [
+      "storage",
+      "tabs"
+    ],
+    "host_permissions": [
+      "http://localhost:3000/*",
+      "https://*/*"
+    ]
+  }
+}
