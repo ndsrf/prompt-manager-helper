@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { trpc } from '@/lib/trpc/client';
-import { Star, Folder, Lock, Globe, Users, Settings } from 'lucide-react';
+import { Star, Folder, Lock, Globe, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Prompt {
@@ -35,6 +35,10 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
+  // Fetch all tags and folders for selection
+  const { data: allTags } = trpc.tag.getAll.useQuery();
+  const { data: allFolders } = trpc.folder.getAll.useQuery();
+
   const toggleFavorite = trpc.prompt.toggleFavorite.useMutation({
     onSuccess: () => {
       utils.prompt.getById.invalidate({ id: prompt.id });
@@ -44,9 +48,21 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
     },
   });
 
+  // @ts-ignore - Type inference issue with tRPC, will be fixed in Phase 3
   const updatePrompt = trpc.prompt.update.useMutation({
-    onSuccess: () => {
-      utils.prompt.getById.invalidate({ id: prompt.id });
+    onSuccess: async () => {
+      await utils.prompt.getById.invalidate({ id: prompt.id });
+      toast({
+        title: 'Updated',
+        description: 'Prompt metadata updated successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -54,6 +70,18 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
     private: <Lock className="h-4 w-4" />,
     shared: <Users className="h-4 w-4" />,
     public: <Globe className="h-4 w-4" />,
+  };
+
+  const toggleTag = (tagId: string) => {
+    const currentTagIds = prompt.tags.map(t => t.tag.id);
+    const newTagIds = currentTagIds.includes(tagId)
+      ? currentTagIds.filter(id => id !== tagId)
+      : [...currentTagIds, tagId];
+
+    updatePrompt.mutate({
+      id: prompt.id,
+      tagIds: newTagIds,
+    });
   };
 
   return (
@@ -75,7 +103,7 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
             onClick={() => toggleFavorite.mutate({ id: prompt.id })}
           >
             <Star
-              className={`h-4 w-4 mr-2 ${prompt.isFavorite ? 'fill-current' : ''}`}
+              className={`h-4 w-4 mr-2 ${prompt.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`}
             />
             {prompt.isFavorite ? 'Favorited' : 'Add to Favorites'}
           </Button>
@@ -92,6 +120,7 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
                 targetLlm: value === 'any' ? null : value,
               })
             }
+            disabled={updatePrompt.isPending}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select LLM" />
@@ -117,6 +146,7 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
                 applyCustomInstructions: checked === true,
               })
             }
+            disabled={updatePrompt.isPending}
           />
           <div className="space-y-1 leading-none">
             <Label
@@ -126,7 +156,7 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
               Apply my custom instructions
             </Label>
             <p className="text-xs text-muted-foreground">
-              When enabled, your profile custom instructions will be prepended to the prompt before running tests
+              When enabled, your profile custom instructions will be prepended to this prompt
             </p>
           </div>
         </div>
@@ -142,6 +172,7 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
                 privacy: value,
               })
             }
+            disabled={updatePrompt.isPending}
           >
             <SelectTrigger>
               <SelectValue />
@@ -173,33 +204,66 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
         <div className="space-y-2">
           <Label className="text-sm">Tags</Label>
           <div className="flex flex-wrap gap-2">
-            {prompt.tags.length === 0 && (
-              <p className="text-sm text-muted-foreground">No tags</p>
+            {allTags && allTags.length > 0 ? (
+              allTags.map((tag: any) => {
+                const isSelected = prompt.tags.some(pt => pt.tag.id === tag.id);
+                return (
+                  <Badge
+                    key={tag.id}
+                    variant={isSelected ? 'default' : 'outline'}
+                    className={`cursor-pointer hover:opacity-80 transition-opacity ${updatePrompt.isPending ? 'opacity-50 pointer-events-none' : ''}`}
+                    style={{
+                      backgroundColor: isSelected ? tag.color || undefined : undefined,
+                      borderColor: tag.color || undefined,
+                      color: isSelected ? 'white' : tag.color || undefined,
+                    }}
+                    onClick={() => !updatePrompt.isPending && toggleTag(tag.id)}
+                  >
+                    {tag.name}
+                  </Badge>
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No tags available
+              </p>
             )}
-            {prompt.tags.map(({ tag }) => (
-              <Badge
-                key={tag.id}
-                variant="secondary"
-                style={{
-                  backgroundColor: tag.color
-                    ? `${tag.color}20`
-                    : undefined,
-                  color: tag.color || undefined,
-                }}
-              >
-                {tag.name}
-              </Badge>
-            ))}
           </div>
         </div>
 
         {/* Folder */}
         <div className="space-y-2">
           <Label className="text-sm">Folder</Label>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Folder className="h-4 w-4" />
-            {prompt.folderId ? 'In a folder' : 'No folder'}
-          </div>
+          <Select
+            value={prompt.folderId || 'none'}
+            onValueChange={(value) =>
+              updatePrompt.mutate({
+                id: prompt.id,
+                folderId: value === 'none' ? null : value,
+              })
+            }
+            disabled={updatePrompt.isPending}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a folder" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                <div className="flex items-center gap-2">
+                  <Folder className="h-4 w-4" />
+                  No folder
+                </div>
+              </SelectItem>
+              {allFolders?.map((folder: any) => (
+                <SelectItem key={folder.id} value={folder.id}>
+                  <div className="flex items-center gap-2">
+                    <Folder className="h-4 w-4" />
+                    {folder.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </Card>

@@ -21,6 +21,7 @@ export const promptSchema = z.object({
   isFavorite: z.boolean().default(false),
   privacy: z.enum(['private', 'shared', 'public']).default('private'),
   usageCount: z.number().default(0),
+  applyCustomInstructions: z.boolean().default(true),
   createdAt: z.union([z.date(), z.string()]),
   updatedAt: z.union([z.date(), z.string()]),
   folder: z.object({
@@ -43,6 +44,7 @@ export const authStateSchema = z.object({
     id: z.string(),
     email: z.string(),
     name: z.string().nullable(),
+    customInstructions: z.string().nullable().optional(),
   }).nullable(),
   token: z.string().nullable(),
 })
@@ -67,6 +69,7 @@ export type DetectedLLM =
   | 'claude'
   | 'gemini'
   | 'copilot'
+  | 'm365copilot'
   | 'perplexity'
   | 'unknown'
 

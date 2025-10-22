@@ -34,6 +34,12 @@ const LLM_CONFIGS: LLMConfig[] = [
     sendButtonSelector: 'button[aria-label="Submit"]',
   },
   {
+    name: 'm365copilot',
+    inputSelector: '#ms-searchux-input-0, input[role="combobox"][id*="searchux"]',
+    buttonInsertSelector: 'body',
+    sendButtonSelector: 'button[aria-label*="Search"], button[type="submit"]',
+  },
+  {
     name: 'perplexity',
     inputSelector: 'textarea[placeholder*="Ask anything"]',
     buttonInsertSelector: '.relative.flex',
@@ -45,7 +51,7 @@ export function detectLLM(): LLMConfig | null {
   const hostname = window.location.hostname
 
   // Check hostname first
-  if (hostname.includes('chat.openai.com')) {
+  if (hostname.includes('chat.openai.com') || hostname.includes('chatgpt.com')) {
     return LLM_CONFIGS.find(c => c.name === 'chatgpt') || null
   }
   if (hostname.includes('claude.ai')) {
@@ -53,6 +59,9 @@ export function detectLLM(): LLMConfig | null {
   }
   if (hostname.includes('gemini.google.com') || hostname.includes('bard.google.com')) {
     return LLM_CONFIGS.find(c => c.name === 'gemini') || null
+  }
+  if (hostname.includes('m365.cloud.microsoft')) {
+    return LLM_CONFIGS.find(c => c.name === 'm365copilot') || null
   }
   if (hostname.includes('copilot.microsoft.com')) {
     return LLM_CONFIGS.find(c => c.name === 'copilot') || null
@@ -104,6 +113,26 @@ export function insertTextIntoInput(config: LLMConfig, text: string): boolean {
     return true
   }
 
+  // For regular input elements
+  if (input instanceof HTMLInputElement) {
+    input.value = text
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+
+    // Also try to trigger InputEvent for React apps
+    const inputEvent = new InputEvent('input', {
+      bubbles: true,
+      cancelable: true,
+      inputType: 'insertText',
+      data: text
+    })
+    input.dispatchEvent(inputEvent)
+
+    input.focus()
+    console.log('[LLM Detector] Inserted into input element')
+    return true
+  }
+
   // For contenteditable elements
   if (input.isContentEditable) {
     // Use innerHTML for better formatting support
@@ -146,6 +175,10 @@ export function getCurrentInputText(config: LLMConfig): string {
   if (!input) return ''
 
   if (input instanceof HTMLTextAreaElement) {
+    return input.value
+  }
+
+  if (input instanceof HTMLInputElement) {
     return input.value
   }
 

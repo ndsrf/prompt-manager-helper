@@ -84,7 +84,12 @@ class ApiClient {
 
     try {
       // Try to fetch user info to validate the token
-      const user = await this.trpcFetch<{ id: string; email: string; name: string | null }>('user.me')
+      const user = await this.trpcFetch<{
+        id: string
+        email: string
+        name: string | null
+        customInstructions: string | null
+      }>('user.me')
 
       const authState: AuthState = {
         isAuthenticated: true,
@@ -92,6 +97,7 @@ class ApiClient {
           id: user.id,
           email: user.email,
           name: user.name || undefined,
+          customInstructions: user.customInstructions || undefined,
         },
         token,
       }

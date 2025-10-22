@@ -1,9 +1,25 @@
+import type { PlasmoCSConfig } from "plasmo"
 import { detectLLM, insertTextIntoInput } from "~/lib/llm-detector"
 import type { Prompt, Variable } from "~/lib/types"
 import { substituteVariables } from "~/components/VariableDialog"
+import { getAuthState } from "~/lib/storage"
+
+export const config: PlasmoCSConfig = {
+  matches: [
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://bard.google.com/*",
+    "https://copilot.microsoft.com/*",
+    "https://m365.cloud.microsoft/*",
+    "https://www.perplexity.ai/*"
+  ],
+  all_frames: false
+}
 
 // Listen for messages from popup or background
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   console.log('[Content] Message received:', message.type)
 
   if (message.type === 'INSERT_PROMPT') {
@@ -32,6 +48,18 @@ async function handleInsertPrompt(prompt: Prompt) {
       return
     }
     content = substituteVariables(content, values)
+  }
+
+  // Apply custom instructions if enabled
+  if (prompt.applyCustomInstructions !== false) {
+    const authState = await getAuthState()
+    const customInstructions = authState?.user?.customInstructions
+
+    if (customInstructions && customInstructions.trim()) {
+      // Prepend custom instructions to the prompt content
+      content = `${customInstructions.trim()}\n\n---\n\n${content}`
+      console.log('[Content] Applied custom instructions to prompt')
+    }
   }
 
   // Insert the prompt
@@ -127,33 +155,63 @@ function createVariableDialog(
     let input: HTMLInputElement | HTMLSelectElement
 
     if (variable.type === 'select' && variable.options) {
-      input = document.createElement('select')
+      const selectInput = document.createElement('select')
+      input = selectInput
       const defaultOption = document.createElement('option')
       defaultOption.value = ''
       defaultOption.textContent = 'Select...'
-      input.appendChild(defaultOption)
+      selectInput.appendChild(defaultOption)
 
       variable.options.forEach(option => {
         const opt = document.createElement('option')
         opt.value = option
         opt.textContent = option
-        input.appendChild(opt)
+        selectInput.appendChild(opt)
       })
-    } else {
-      input = document.createElement('input')
-      input.type = variable.type === 'number' ? 'number' : 'text'
-      input.placeholder = variable.default || `Enter ${variable.name}...`
-    }
 
-    input.style.cssText = `
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-      box-sizing: border-box;
-    `
+      selectInput.style.cssText = `
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        box-sizing: border-box;
+      `
+    } else if (variable.type === 'number') {
+      const numberInput = document.createElement('input')
+      input = numberInput
+      numberInput.type = 'number'
+      numberInput.placeholder = variable.default || `Enter ${variable.name}...`
+
+      numberInput.style.cssText = `
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        box-sizing: border-box;
+      `
+    } else {
+      const textArea = document.createElement('textarea')
+      input = textArea as any
+      textArea.placeholder = variable.default || `Enter ${variable.name}...`
+      textArea.rows = 3
+
+      textArea.style.cssText = `
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        box-sizing: border-box;
+        resize: vertical;
+        min-height: 60px;
+        max-height: 200px;
+      `
+    }
 
     if (variable.default) {
       input.value = variable.default
@@ -214,6 +272,12 @@ function createVariableDialog(
   `
   submitBtn.onmouseover = () => submitBtn.style.background = '#4f46e5'
   submitBtn.onmouseout = () => submitBtn.style.background = '#6366f1'
+  // Add explicit click handler as backup
+  submitBtn.onclick = (e) => {
+    e.preventDefault()
+    console.log('[VariableDialog] Submit button clicked with values:', values)
+    onSubmit(values)
+  }
 
   footer.appendChild(cancelBtn)
   footer.appendChild(submitBtn)
@@ -227,6 +291,7 @@ function createVariableDialog(
   // Event handlers
   form.onsubmit = (e) => {
     e.preventDefault()
+    console.log('[VariableDialog] Form submitted with values:', values)
     onSubmit(values)
   }
 

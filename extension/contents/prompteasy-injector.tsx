@@ -5,10 +5,12 @@ import { Book, Sparkles, Save } from "lucide-react"
 export const config: PlasmoCSConfig = {
   matches: [
     "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://gemini.google.com/*",
     "https://bard.google.com/*",
     "https://copilot.microsoft.com/*",
+    "https://m365.cloud.microsoft/*",
     "https://www.perplexity.ai/*"
   ],
   all_frames: false

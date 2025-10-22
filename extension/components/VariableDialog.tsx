@@ -72,14 +72,14 @@ export function VariableDialog({ variables, onSubmit, onCancel }: VariableDialog
                     placeholder={variable.default || `Enter ${variable.name}...`}
                   />
                 ) : (
-                  <input
-                    type="text"
+                  <textarea
                     value={values[variable.name]}
                     onChange={(e) =>
                       setValues({ ...values, [variable.name]: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y min-h-[60px] max-h-[200px]"
                     placeholder={variable.default || `Enter ${variable.name}...`}
+                    rows={3}
                   />
                 )}
               </div>

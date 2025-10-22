@@ -95,6 +95,11 @@ export function PromptEditor({ prompt: initialPrompt, userId }: PromptEditorProp
     });
   }, [prompt.id, title, description, content, variables, updatePromptMutation]);
 
+  // Sync with prop changes (e.g., when metadata is updated)
+  useEffect(() => {
+    setPrompt(initialPrompt);
+  }, [initialPrompt]);
+
   // Track changes
   useEffect(() => {
     const changed =
