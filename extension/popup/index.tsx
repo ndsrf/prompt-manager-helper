@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Search, Star, Settings, LogOut, Plus, Loader2 } from "lucide-react"
+import { Search, Star, Settings, LogOut, Plus, Loader2, Copy, Check } from "lucide-react"
 import type { Prompt, AuthState } from "~/lib/types"
 import { cn } from "~/lib/utils"
 import "~/style.css"
@@ -258,6 +258,20 @@ function IndexPopup() {
 }
 
 function PromptCard({ prompt, onClick }: { prompt: Prompt; onClick: () => void }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyClick = async (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the parent onClick
+
+    try {
+      await navigator.clipboard.writeText(prompt.content)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy prompt:', error)
+    }
+  }
+
   return (
     <button
       onClick={onClick}
@@ -265,7 +279,20 @@ function PromptCard({ prompt, onClick }: { prompt: Prompt; onClick: () => void }
     >
       <div className="flex items-start justify-between mb-1">
         <h3 className="font-medium text-gray-900 text-sm">{prompt.title}</h3>
-        {prompt.isFavorite && <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={handleCopyClick}
+            className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+            title="Copy prompt to clipboard"
+          >
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-green-600" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-gray-500" />
+            )}
+          </button>
+          {prompt.isFavorite && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
+        </div>
       </div>
       {prompt.description && (
         <p className="text-xs text-gray-500 line-clamp-2 mb-2">{prompt.description}</p>
