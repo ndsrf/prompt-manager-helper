@@ -253,7 +253,13 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent
+                align="end"
+                className="w-[calc(100vw-2rem)] max-w-[200px] sm:w-48"
+                sideOffset={5}
+                alignOffset={-5}
+                collisionPadding={8}
+              >
                 {!isSharedView && (
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(prompt.id); }}>
                     <Edit className="h-4 w-4 mr-2" />
