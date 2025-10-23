@@ -55,13 +55,13 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
               ),
             blockquote: ({ node, ...props }) => (
               <blockquote
-                className="border-l-4 border-blue-500 pl-4 italic my-2 text-muted-foreground"
+                className="border-l-4 border-primary pl-4 italic my-2 text-muted-foreground"
                 {...props}
               />
             ),
             a: ({ node, ...props }) => (
               <a
-                className="text-blue-600 hover:underline"
+                className="text-primary hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
                 {...props}
@@ -69,14 +69,14 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
             ),
             table: ({ node, ...props }) => (
               <div className="overflow-x-auto my-2">
-                <table className="min-w-full border-collapse border border-gray-300" {...props} />
+                <table className="min-w-full border-collapse border border-border" {...props} />
               </div>
             ),
             th: ({ node, ...props }) => (
-              <th className="border border-gray-300 px-3 py-2 bg-muted font-semibold text-left text-sm" {...props} />
+              <th className="border border-border px-3 py-2 bg-muted font-semibold text-left text-sm" {...props} />
             ),
             td: ({ node, ...props }) => (
-              <td className="border border-gray-300 px-3 py-2 text-sm" {...props} />
+              <td className="border border-border px-3 py-2 text-sm" {...props} />
             ),
           }}
         >
