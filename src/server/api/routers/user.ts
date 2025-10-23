@@ -122,4 +122,50 @@ export const userRouter = createTRPCRouter({
 
       return user;
     }),
+
+  getSettings: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: {
+        settings: true,
+      },
+    });
+
+    if (!user) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'User not found',
+      });
+    }
+
+    return user.settings as Record<string, any>;
+  }),
+
+  updateSettings: protectedProcedure
+    .input(
+      z.object({
+        settings: z.record(z.any()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get current settings and merge with new ones
+      const currentUser = await ctx.prisma.user.findUnique({
+        where: { id: ctx.session.user.id },
+        select: { settings: true },
+      });
+
+      const currentSettings = (currentUser?.settings as Record<string, any>) || {};
+      const updatedSettings = { ...currentSettings, ...input.settings };
+
+      const user = await ctx.prisma.user.update({
+        where: { id: ctx.session.user.id },
+        data: { settings: updatedSettings },
+        select: {
+          id: true,
+          settings: true,
+        },
+      });
+
+      return user;
+    }),
 });

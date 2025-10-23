@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Settings as SettingsIcon, Save, RefreshCw, ExternalLink } from "lucide-react"
 import type { Settings, AuthState } from "~/lib/types"
 import { cn } from "~/lib/utils"
+import { initializeTheme, applyTheme } from "~/lib/theme"
 import "~/style.css"
 
 function OptionsPage() {
@@ -20,6 +21,7 @@ function OptionsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
+    initializeTheme()
     loadSettings()
     loadAuthState()
   }, [])
@@ -59,6 +61,8 @@ function OptionsPage() {
       })
 
       if (response.success) {
+        // Apply theme immediately
+        applyTheme(settings.theme)
         setMessage({ type: 'success', text: 'Settings saved successfully!' })
       } else {
         setMessage({ type: 'error', text: response.error || 'Failed to save settings' })

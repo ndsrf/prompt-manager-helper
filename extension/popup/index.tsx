@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Search, Star, Settings, LogOut, Plus, Loader2 } from "lucide-react"
 import type { Prompt, AuthState } from "~/lib/types"
 import { cn } from "~/lib/utils"
+import { initializeTheme } from "~/lib/theme"
 import "~/style.css"
 
 function IndexPopup() {
@@ -13,6 +14,7 @@ function IndexPopup() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
   useEffect(() => {
+    initializeTheme()
     loadAuthState()
   }, [])
 

@@ -54,7 +54,7 @@ export type AuthState = z.infer<typeof authStateSchema>
 // Settings schema
 export const settingsSchema = z.object({
   apiUrl: z.string().default('https://prompteasy.ndsrf.com'),
-  theme: z.enum(['light', 'dark', 'system']).default('system'),
+  theme: z.enum(['light', 'dark', 'futuristic', 'system']).default('system'),
   autoInsert: z.boolean().default(false),
   showVariablePrompt: z.boolean().default(true),
   cacheEnabled: z.boolean().default(true),
