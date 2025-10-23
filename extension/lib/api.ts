@@ -116,6 +116,16 @@ class ApiClient {
     this.token = null
   }
 
+  // User settings
+  async getUserSettings(): Promise<Record<string, any>> {
+    try {
+      return await this.trpcFetch<Record<string, any>>('user.getSettings')
+    } catch (error) {
+      console.error('[API] Error fetching user settings:', error)
+      return {}
+    }
+  }
+
   // Prompts
   async getPrompts(params?: {
     search?: string
