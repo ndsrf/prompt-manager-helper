@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, MoreVertical, Trash2, Edit, Copy, Folder, Calendar } from 'lucide-react';
+import { Star, MoreVertical, Trash2, Edit, Copy, Folder, Calendar, History, GitCompare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -16,6 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { VersionHistory } from '../editor/VersionHistory';
+import { VersionComparison } from '../editor/VersionComparison';
 
 interface PromptListProps {
   folderId?: string | null;
@@ -169,7 +171,7 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
       {data.prompts.map((prompt: any) => (
         <div
           key={prompt.id}
-          className="border rounded-lg p-3 sm:p-4 hover:bg-accent/50 cursor-pointer transition-colors group"
+          className="border border-border rounded-lg p-3 sm:p-4 hover:bg-accent/50 cursor-pointer transition-colors group"
           onClick={() => handleView(prompt.id)}
         >
           <div className="flex items-start justify-between gap-2 sm:gap-4">
@@ -181,7 +183,7 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
                     variant="ghost"
                     size="sm"
                     className={`h-6 w-6 p-0 flex-shrink-0 ${
-                      prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground sm:opacity-0 group-hover:opacity-100'
+                      prompt.isFavorite ? 'text-yellow-500' : 'text-muted-foreground opacity-100 sm:opacity-0 sm:group-hover:opacity-100'
                     }`}
                     onClick={(e) => handleToggleFavorite(e, prompt.id)}
                   >
@@ -243,18 +245,48 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0 sm:opacity-0 group-hover:opacity-100">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
                 {!isSharedView && (
-                  <DropdownMenuItem onClick={() => handleEdit(prompt.id)}>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(prompt.id); }}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => handleCopy(prompt)}>
+                {!isSharedView && prompt._count && prompt._count.versions > 0 && (
+                  <>
+                    <VersionHistory
+                      promptId={prompt.id}
+                      currentContent={prompt.content}
+                      currentTitle={prompt.title}
+                    >
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm"
+                      >
+                        <History className="h-4 w-4 mr-2" />
+                        View History
+                      </div>
+                    </VersionHistory>
+                    <VersionComparison promptId={prompt.id}>
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm"
+                      >
+                        <GitCompare className="h-4 w-4 mr-2" />
+                        Compare Versions
+                      </div>
+                    </VersionComparison>
+                  </>
+                )}
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopy(prompt); }}>
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Content
                 </DropdownMenuItem>
@@ -262,7 +294,7 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => handleDelete(prompt.id)}
+                      onClick={(e) => { e.stopPropagation(); handleDelete(prompt.id); }}
                       className="text-destructive"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
