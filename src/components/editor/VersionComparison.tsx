@@ -26,9 +26,10 @@ import { DiffViewer } from './DiffViewer';
 
 interface VersionComparisonProps {
   promptId: string;
+  children?: React.ReactNode;
 }
 
-export function VersionComparison({ promptId }: VersionComparisonProps) {
+export function VersionComparison({ promptId, children }: VersionComparisonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [versionId1, setVersionId1] = useState<string>('');
   const [versionId2, setVersionId2] = useState<string>('');
@@ -97,10 +98,12 @@ export function VersionComparison({ promptId }: VersionComparisonProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <GitCompare className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Compare Versions</span>
-        </Button>
+        {children || (
+          <Button variant="outline" size="sm">
+            <GitCompare className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Compare Versions</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
