@@ -1,4 +1,5 @@
 import type { DetectedLLM } from './types'
+import { selectorCache } from './selector-cache'
 
 export interface LLMConfig {
   name: DetectedLLM
@@ -7,71 +8,37 @@ export interface LLMConfig {
   sendButtonSelector?: string
 }
 
-// LLM detection configurations
-const LLM_CONFIGS: LLMConfig[] = [
-  {
-    name: 'chatgpt',
-    inputSelector: '#prompt-textarea, textarea[placeholder*="Message"], div[contenteditable="true"][data-id]',
-    buttonInsertSelector: 'form button[type="button"], .flex.gap-3.items-center',
-    sendButtonSelector: 'button[data-testid="send-button"], button[data-testid="fruitjuice-send-button"]',
-  },
-  {
-    name: 'claude',
-    inputSelector: 'div[contenteditable="true"][role="textbox"]',
-    buttonInsertSelector: '.flex.items-center.gap-2',
-    sendButtonSelector: 'button[aria-label="Send Message"]',
-  },
-  {
-    name: 'gemini',
-    inputSelector: '.ql-editor[contenteditable="true"]',
-    buttonInsertSelector: '.action-wrapper',
-    sendButtonSelector: 'button[aria-label="Send message"]',
-  },
-  {
-    name: 'copilot',
-    inputSelector: '#userInput, textarea[placeholder*="Copilot"], textarea[data-testid="composer-input"], textarea[aria-label="Ask me anything..."]',
-    buttonInsertSelector: '.controls',
-    sendButtonSelector: 'button[aria-label="Submit"]',
-  },
-  {
-    name: 'm365copilot',
-    inputSelector: '#ms-searchux-input-0, input[role="combobox"][id*="searchux"]',
-    buttonInsertSelector: 'body',
-    sendButtonSelector: 'button[aria-label*="Search"], button[type="submit"]',
-  },
-  {
-    name: 'perplexity',
-    inputSelector: 'textarea[placeholder*="Ask anything"]',
-    buttonInsertSelector: '.relative.flex',
-    sendButtonSelector: 'button[aria-label="Submit"]',
-  },
-]
-
-export function detectLLM(): LLMConfig | null {
+/**
+ * Detect which LLM platform the current page is using
+ * This function now uses server-side configurations that can be updated without rebuilding the extension
+ */
+export async function detectLLM(): Promise<LLMConfig | null> {
+  // Get configurations from cache (which fetches from server if needed)
+  const configs = await selectorCache.getConfigs()
   const hostname = window.location.hostname
 
-  // Check hostname first
+  // Check hostname first (most reliable method)
   if (hostname.includes('chat.openai.com') || hostname.includes('chatgpt.com')) {
-    return LLM_CONFIGS.find(c => c.name === 'chatgpt') || null
+    return configs.find(c => c.name === 'chatgpt') || null
   }
   if (hostname.includes('claude.ai')) {
-    return LLM_CONFIGS.find(c => c.name === 'claude') || null
+    return configs.find(c => c.name === 'claude') || null
   }
   if (hostname.includes('gemini.google.com') || hostname.includes('bard.google.com')) {
-    return LLM_CONFIGS.find(c => c.name === 'gemini') || null
+    return configs.find(c => c.name === 'gemini') || null
   }
   if (hostname.includes('m365.cloud.microsoft')) {
-    return LLM_CONFIGS.find(c => c.name === 'm365copilot') || null
+    return configs.find(c => c.name === 'm365copilot') || null
   }
   if (hostname.includes('copilot.microsoft.com')) {
-    return LLM_CONFIGS.find(c => c.name === 'copilot') || null
+    return configs.find(c => c.name === 'copilot') || null
   }
   if (hostname.includes('perplexity.ai')) {
-    return LLM_CONFIGS.find(c => c.name === 'perplexity') || null
+    return configs.find(c => c.name === 'perplexity') || null
   }
 
   // Try to detect by checking for input elements
-  for (const config of LLM_CONFIGS) {
+  for (const config of configs) {
     const input = document.querySelector(config.inputSelector)
     if (input) {
       return config

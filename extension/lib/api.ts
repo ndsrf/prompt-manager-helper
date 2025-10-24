@@ -166,6 +166,30 @@ class ApiClient {
   }> {
     return await this.trpcMutate('ai.improvePrompt', { content, targetLlm })
   }
+
+  // Selectors - Public endpoint, no auth required
+  async getSelectors(): Promise<{
+    configs: Array<{
+      name: string
+      inputSelector: string
+      buttonInsertSelector: string
+      sendButtonSelector?: string
+      version: string
+      lastUpdated: string
+    }>
+    version: string
+    lastUpdated: string
+  }> {
+    // This endpoint doesn't require authentication
+    const tempToken = this.token
+    this.token = null
+
+    try {
+      return await this.trpcFetch('selector.getAll')
+    } finally {
+      this.token = tempToken
+    }
+  }
 }
 
 export const apiClient = new ApiClient()

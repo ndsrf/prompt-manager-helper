@@ -33,7 +33,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 })
 
 async function handleInsertPrompt(prompt: Prompt) {
-  const llmConfig = detectLLM()
+  const llmConfig = await detectLLM()
   if (!llmConfig) {
     throw new Error('LLM not detected. Make sure you are on a supported page.')
   }

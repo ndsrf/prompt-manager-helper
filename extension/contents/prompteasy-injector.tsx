@@ -18,7 +18,7 @@ export const config: PlasmoCSConfig = {
 
 // Inject PromptEasy buttons into LLM interface
 class PromptEasyInjector {
-  private llmConfig = detectLLM()
+  private llmConfig: Awaited<ReturnType<typeof detectLLM>> | null = null
   private container: HTMLDivElement | null = null
 
   constructor() {
@@ -26,7 +26,9 @@ class PromptEasyInjector {
     this.init()
   }
 
-  private init() {
+  private async init() {
+    this.llmConfig = await detectLLM()
+
     if (!this.llmConfig) {
       console.log('[PromptEasy] LLM not detected, waiting...')
       // Retry after DOM is loaded
@@ -45,8 +47,8 @@ class PromptEasyInjector {
     this.observeDOM()
   }
 
-  private retryDetection() {
-    this.llmConfig = detectLLM()
+  private async retryDetection() {
+    this.llmConfig = await detectLLM()
     if (this.llmConfig) {
       this.init()
     }
