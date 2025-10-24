@@ -21,9 +21,9 @@ class ApiClient {
   ): Promise<T> {
     await this.initialize()
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (this.token) {
@@ -53,7 +53,7 @@ class ApiClient {
   ): Promise<T> {
     await this.initialize()
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 
@@ -96,8 +96,8 @@ class ApiClient {
         user: {
           id: user.id,
           email: user.email,
-          name: user.name || undefined,
-          customInstructions: user.customInstructions || undefined,
+          name: user.name,
+          customInstructions: user.customInstructions,
         },
         token,
       }

@@ -23,7 +23,7 @@ The extension now uses **server-side selector configurations** instead of hardco
 3. **If cache is old or missing** → Fetches from server API
 4. **Server returns** → Current selector configurations
 5. **Extension caches** → Saves to chrome.storage for 24 hours
-6. **Fallback** → Uses hardcoded selectors if server is unreachable
+6. **If server unavailable** → Shows error notification to user
 
 ## Updating Selectors
 
@@ -158,21 +158,6 @@ if (hostname.includes('newllm.com')) {
 }
 ```
 
-### 5. Add Fallback Configuration
-
-Edit `/extension/lib/selector-cache.ts`:
-
-```typescript
-const FALLBACK_CONFIGS: LLMConfig[] = [
-  // ... existing fallbacks
-  {
-    name: 'newllm',
-    inputSelector: 'textarea[data-testid="input"]',
-    buttonInsertSelector: '.toolbar',
-    sendButtonSelector: 'button[aria-label="Send"]',
-  },
-]
-```
 
 ## Debugging
 
@@ -214,27 +199,55 @@ Open extension content script console on LLM page to see:
   - `llm_selectors_version` - Server version
   - `llm_selectors_timestamp` - Cache timestamp
 
-## Fallback Strategy
+## Server Unavailability Handling
 
-If server is unreachable:
+If server is unreachable and no cached selectors exist:
 
-1. Use cached selectors (if available)
-2. Use hardcoded fallback selectors
-3. Extension continues to work offline
+1. Extension initialization fails
+2. Error notification is displayed to the user
+3. Message: "Server is unavailable. Please check your internet connection and try again later."
+4. Extension will not function until server is reachable
+
+**Note**: If cached selectors exist (less than 24 hours old), the extension continues to work with cached configurations even if the server is temporarily unavailable.
 
 ## Benefits
 
 ✅ Update selectors without rebuilding extension
 ✅ Instant deployment to all users (within 24 hours)
 ✅ Version tracking and history
-✅ Fallback ensures extension always works
+✅ Cached selectors work for 24 hours even if server is down
 ✅ No need to redistribute extension files
+✅ Clear error messages when server is unavailable
 
 ## Limitations
 
 ⚠️ New LLM platforms still require extension update (for manifest/types)
 ⚠️ Cache refresh takes up to 24 hours
-⚠️ Requires server to be accessible
+⚠️ **Requires server to be accessible on first use or after cache expires**
+⚠️ Extension will not work if server is down and cache is empty/expired
+
+## Error Handling
+
+### User-Facing Errors
+
+When the server is unavailable, users will see:
+
+```
+⚠️ PromptEasy Extension Error
+Server is unavailable. Please check your internet connection and try again later.
+```
+
+This notification:
+- Appears at the top-right of the page
+- Stays visible for 10 seconds
+- Can be dismissed by reloading the page
+
+### Developer Console
+
+Check the browser console for detailed error messages:
+- `[Selector Cache] Error fetching from server:` - Server connection failed
+- `[Selector Cache] Server returned no configurations` - Server responded but no configs
+- `[PromptEasy] Error during initialization:` - Extension failed to initialize
 
 ## Future Enhancements
 
@@ -243,3 +256,5 @@ If server is unreachable:
 - User-reported selector failures
 - A/B testing for selector changes
 - Multiple selector versions with fallbacks
+- Health check endpoint for server status
+- Automatic retry with exponential backoff

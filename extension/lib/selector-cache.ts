@@ -6,49 +6,10 @@ const CACHE_VERSION_KEY = 'llm_selectors_version'
 const CACHE_TIMESTAMP_KEY = 'llm_selectors_timestamp'
 const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
-// Fallback configurations if server is unreachable
-const FALLBACK_CONFIGS: LLMConfig[] = [
-  {
-    name: 'chatgpt',
-    inputSelector: '#prompt-textarea, textarea[placeholder*="Message"], div[contenteditable="true"][data-id]',
-    buttonInsertSelector: 'form button[type="button"], .flex.gap-3.items-center',
-    sendButtonSelector: 'button[data-testid="send-button"], button[data-testid="fruitjuice-send-button"]',
-  },
-  {
-    name: 'claude',
-    inputSelector: 'div[contenteditable="true"][role="textbox"]',
-    buttonInsertSelector: '.flex.items-center.gap-2',
-    sendButtonSelector: 'button[aria-label="Send Message"]',
-  },
-  {
-    name: 'gemini',
-    inputSelector: '.ql-editor[contenteditable="true"]',
-    buttonInsertSelector: '.action-wrapper',
-    sendButtonSelector: 'button[aria-label="Send message"]',
-  },
-  {
-    name: 'copilot',
-    inputSelector: '#userInput, textarea[placeholder*="Copilot"], textarea[data-testid="composer-input"], textarea[aria-label="Ask me anything..."]',
-    buttonInsertSelector: '.controls',
-    sendButtonSelector: 'button[aria-label="Submit"]',
-  },
-  {
-    name: 'm365copilot',
-    inputSelector: '#ms-searchux-input-0, input[role="combobox"][id*="searchux"]',
-    buttonInsertSelector: 'body',
-    sendButtonSelector: 'button[aria-label*="Search"], button[type="submit"]',
-  },
-  {
-    name: 'perplexity',
-    inputSelector: 'textarea[placeholder*="Ask anything"]',
-    buttonInsertSelector: '.relative.flex',
-    sendButtonSelector: 'button[aria-label="Submit"]',
-  },
-]
-
 class SelectorCache {
   private configs: LLMConfig[] | null = null
   private initialized: boolean = false
+  private serverError: Error | null = null
 
   /**
    * Initialize the cache by fetching from storage or server
@@ -74,13 +35,16 @@ class SelectorCache {
       await this.fetchFromServer()
     }
 
-    // If we still don't have configs, use fallback
+    // If we still don't have configs, throw error
     if (!this.configs || this.configs.length === 0) {
-      console.log('[Selector Cache] Using fallback configurations')
-      this.configs = FALLBACK_CONFIGS
+      const errorMsg = 'Server is unavailable. Please check your internet connection and try again later.'
+      console.error('[Selector Cache]', errorMsg)
+      this.serverError = new Error(errorMsg)
+      throw this.serverError
     }
 
     this.initialized = true
+    this.serverError = null
   }
 
   /**
@@ -145,32 +109,59 @@ class SelectorCache {
         })
 
         console.log('[Selector Cache] Fetched and cached', this.configs.length, 'configs from server')
+        this.serverError = null
       } else {
-        console.warn('[Selector Cache] Server returned no configurations')
+        const errorMsg = 'Server returned no configurations'
+        console.error('[Selector Cache]', errorMsg)
+        this.serverError = new Error(errorMsg)
       }
     } catch (error) {
       console.error('[Selector Cache] Error fetching from server:', error)
-      // Don't throw - we'll use cached or fallback configs
+      this.serverError = error instanceof Error ? error : new Error(String(error))
+      // If we don't have cached configs, this is a critical error
+      if (!this.configs || this.configs.length === 0) {
+        throw this.serverError
+      }
     }
   }
 
   /**
    * Get all configurations
+   * Throws error if server is unavailable and no cached configs exist
    */
   async getConfigs(): Promise<LLMConfig[]> {
     if (!this.initialized) {
       await this.initialize()
     }
 
-    return this.configs || FALLBACK_CONFIGS
+    if (!this.configs || this.configs.length === 0) {
+      throw new Error('Server is unavailable. Please check your internet connection and try again later.')
+    }
+
+    return this.configs
   }
 
   /**
    * Get configuration by name
+   * Throws error if server is unavailable and no cached configs exist
    */
   async getConfig(name: string): Promise<LLMConfig | null> {
     const configs = await this.getConfigs()
     return configs.find(c => c.name === name) || null
+  }
+
+  /**
+   * Check if there's a server error
+   */
+  hasError(): boolean {
+    return this.serverError !== null
+  }
+
+  /**
+   * Get the server error if any
+   */
+  getError(): Error | null {
+    return this.serverError
   }
 
   /**

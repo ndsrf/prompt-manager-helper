@@ -33,12 +33,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 })
 
 async function handleInsertPrompt(prompt: Prompt) {
-  const llmConfig = await detectLLM()
-  if (!llmConfig) {
-    throw new Error('LLM not detected. Make sure you are on a supported page.')
-  }
+  try {
+    const llmConfig = await detectLLM()
+    if (!llmConfig) {
+      throw new Error('LLM not detected. Make sure you are on a supported page.')
+    }
 
-  let content = prompt.content
+    let content = prompt.content
 
   // If prompt has variables, show dialog to fill them in
   if (prompt.variables && prompt.variables.length > 0) {
@@ -62,10 +63,15 @@ async function handleInsertPrompt(prompt: Prompt) {
     }
   }
 
-  // Insert the prompt
-  const success = insertTextIntoInput(llmConfig, content)
-  if (!success) {
-    throw new Error('Failed to insert prompt into input field')
+    // Insert the prompt
+    const success = insertTextIntoInput(llmConfig, content)
+    if (!success) {
+      throw new Error('Failed to insert prompt into input field')
+    }
+  } catch (error) {
+    console.error('[Content] Error inserting prompt:', error)
+    // Re-throw to be caught by the message handler
+    throw error
   }
 }
 
