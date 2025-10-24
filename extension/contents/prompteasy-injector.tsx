@@ -18,7 +18,7 @@ export const config: PlasmoCSConfig = {
 
 // Inject PromptEasy buttons into LLM interface
 class PromptEasyInjector {
-  private llmConfig = detectLLM()
+  private llmConfig: Awaited<ReturnType<typeof detectLLM>> | null = null
   private container: HTMLDivElement | null = null
 
   constructor() {
@@ -26,30 +26,79 @@ class PromptEasyInjector {
     this.init()
   }
 
-  private init() {
-    if (!this.llmConfig) {
-      console.log('[PromptEasy] LLM not detected, waiting...')
-      // Retry after DOM is loaded
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => this.retryDetection())
-      } else {
-        setTimeout(() => this.retryDetection(), 2000)
+  private async init() {
+    try {
+      this.llmConfig = await detectLLM()
+
+      if (!this.llmConfig) {
+        console.log('[PromptEasy] LLM not detected, waiting...')
+        // Retry after DOM is loaded
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => this.retryDetection())
+        } else {
+          setTimeout(() => this.retryDetection(), 2000)
+        }
+        return
       }
-      return
+
+      console.log('[PromptEasy] Detected LLM:', this.llmConfig.name)
+      this.injectButtons()
+
+      // Watch for DOM changes to re-inject if needed
+      this.observeDOM()
+    } catch (error) {
+      console.error('[PromptEasy] Error during initialization:', error)
+      this.showErrorNotification(error instanceof Error ? error.message : 'Failed to initialize PromptEasy extension')
     }
-
-    console.log('[PromptEasy] Detected LLM:', this.llmConfig.name)
-    this.injectButtons()
-
-    // Watch for DOM changes to re-inject if needed
-    this.observeDOM()
   }
 
-  private retryDetection() {
-    this.llmConfig = detectLLM()
-    if (this.llmConfig) {
-      this.init()
+  private async retryDetection() {
+    try {
+      this.llmConfig = await detectLLM()
+      if (this.llmConfig) {
+        this.init()
+      }
+    } catch (error) {
+      console.error('[PromptEasy] Error during retry:', error)
+      this.showErrorNotification(error instanceof Error ? error.message : 'Failed to detect LLM platform')
     }
+  }
+
+  private showErrorNotification(message: string) {
+    const notification = document.createElement('div')
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ef4444;
+      color: white;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 999999;
+      max-width: 400px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    `
+    notification.innerHTML = `
+      <div style="display: flex; align-items: start; gap: 12px;">
+        <div style="flex-shrink: 0; font-size: 20px;">⚠️</div>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">PromptEasy Extension Error</div>
+          <div>${message}</div>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(notification)
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      notification.style.transition = 'opacity 0.3s'
+      notification.style.opacity = '0'
+      setTimeout(() => notification.remove(), 300)
+    }, 10000)
   }
 
   private injectButtons() {

@@ -21,9 +21,9 @@ class ApiClient {
   ): Promise<T> {
     await this.initialize()
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (this.token) {
@@ -53,7 +53,7 @@ class ApiClient {
   ): Promise<T> {
     await this.initialize()
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 
@@ -96,8 +96,8 @@ class ApiClient {
         user: {
           id: user.id,
           email: user.email,
-          name: user.name || undefined,
-          customInstructions: user.customInstructions || undefined,
+          name: user.name,
+          customInstructions: user.customInstructions,
         },
         token,
       }
@@ -165,6 +165,30 @@ class ApiClient {
     score: number
   }> {
     return await this.trpcMutate('ai.improvePrompt', { content, targetLlm })
+  }
+
+  // Selectors - Public endpoint, no auth required
+  async getSelectors(): Promise<{
+    configs: Array<{
+      name: string
+      inputSelector: string
+      buttonInsertSelector: string
+      sendButtonSelector?: string
+      version: string
+      lastUpdated: string
+    }>
+    version: string
+    lastUpdated: string
+  }> {
+    // This endpoint doesn't require authentication
+    const tempToken = this.token
+    this.token = null
+
+    try {
+      return await this.trpcFetch('selector.getAll')
+    } finally {
+      this.token = tempToken
+    }
   }
 }
 
