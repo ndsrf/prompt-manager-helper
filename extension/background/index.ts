@@ -11,6 +11,7 @@ import {
   needsSync,
 } from '~/lib/storage'
 import { syncThemeFromUserSettings } from '~/lib/theme'
+import { selectorCache } from '~/lib/selector-cache'
 
 console.log('[Background] Service worker started')
 
@@ -54,9 +55,10 @@ async function handleMessage(message: Message): Promise<any> {
       // Validate extension token
       const { token } = message.payload
       const authState = await apiClient.validateToken(token)
-      // Sync prompts and theme after validating token
+      // Sync prompts, theme, and selectors after validating token
       await syncPrompts()
       await syncTheme()
+      await syncSelectors()
       return authState
 
     case 'LOGOUT':
@@ -112,6 +114,7 @@ async function handleMessage(message: Message): Promise<any> {
 
     case 'SYNC_DATA':
       await syncPrompts()
+      await syncSelectors()
       return { success: true, timestamp: new Date().toISOString() }
 
     default:
@@ -152,6 +155,18 @@ async function syncTheme(): Promise<void> {
     console.log('[Background] Theme synced successfully')
   } catch (error) {
     console.error('[Background] Error syncing theme:', error)
+  }
+}
+
+// Sync selectors from server
+async function syncSelectors(): Promise<void> {
+  try {
+    console.log('[Background] Syncing selectors...')
+    await selectorCache.refresh()
+    console.log('[Background] Selectors synced successfully')
+  } catch (error) {
+    console.error('[Background] Error syncing selectors:', error)
+    // Don't throw - selector sync is optional and shouldn't break the sync process
   }
 }
 
@@ -203,6 +218,8 @@ setTimeout(async () => {
     await syncPrompts()
     await syncTheme()
   }
+  // Always sync selectors regardless of auth state
+  await syncSelectors()
 }, 5000) // Wait 5 seconds after startup
 
 export {}
