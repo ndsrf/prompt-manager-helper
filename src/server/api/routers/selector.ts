@@ -54,11 +54,11 @@ const LLM_SELECTOR_CONFIGS: LLMConfig[] = [
   },
   {
     name: "m365copilot",
-    inputSelector: "#ms-searchux-input-0, input[role='combobox'][id*='searchux']",
-    buttonInsertSelector: "body",
-    sendButtonSelector: "button[aria-label*='Search'], button[type='submit']",
-    version: "1.0.0",
-    lastUpdated: "2025-10-24",
+    inputSelector: "#m365-chat-editor-target-element, span[role='combobox'][contenteditable='true'][aria-label='Message Copilot']",
+    buttonInsertSelector: ".fai-ChatInput__actions, span.fai-ExpandableChatInput__actions",
+    sendButtonSelector: "button[aria-label='Send'], .fai-SendButton",
+    version: "1.0.1",
+    lastUpdated: "2025-10-27",
   },
   {
     name: "perplexity",
