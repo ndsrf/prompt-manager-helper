@@ -10,6 +10,7 @@ import {
   setSettings,
   needsSync,
 } from '~/lib/storage'
+import { syncThemeFromUserSettings } from '~/lib/theme'
 
 console.log('[Background] Service worker started')
 
@@ -53,8 +54,9 @@ async function handleMessage(message: Message): Promise<any> {
       // Validate extension token
       const { token } = message.payload
       const authState = await apiClient.validateToken(token)
-      // Sync prompts after validating token
+      // Sync prompts and theme after validating token
       await syncPrompts()
+      await syncTheme()
       return authState
 
     case 'LOGOUT':
@@ -135,6 +137,24 @@ async function syncPrompts(): Promise<void> {
   }
 }
 
+// Sync theme from user settings
+async function syncTheme(): Promise<void> {
+  try {
+    const authState = await getAuthState()
+    if (!authState.isAuthenticated) {
+      console.log('[Background] Not authenticated, skipping theme sync')
+      return
+    }
+
+    console.log('[Background] Syncing theme...')
+    const userSettings = await apiClient.getUserSettings()
+    await syncThemeFromUserSettings(userSettings)
+    console.log('[Background] Theme synced successfully')
+  } catch (error) {
+    console.error('[Background] Error syncing theme:', error)
+  }
+}
+
 // Filter prompts locally
 function filterPrompts(
   prompts: any[],
@@ -181,6 +201,7 @@ setTimeout(async () => {
   const authState = await getAuthState()
   if (authState.isAuthenticated) {
     await syncPrompts()
+    await syncTheme()
   }
 }, 5000) // Wait 5 seconds after startup
 

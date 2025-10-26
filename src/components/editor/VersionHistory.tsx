@@ -54,6 +54,7 @@ interface VersionHistoryProps {
   currentContent: string;
   currentTitle: string;
   onRestore?: (content: string, title: string) => void;
+  children?: React.ReactNode;
 }
 
 export function VersionHistory({
@@ -61,6 +62,7 @@ export function VersionHistory({
   currentContent,
   currentTitle,
   onRestore,
+  children,
 }: VersionHistoryProps) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
@@ -186,10 +188,12 @@ export function VersionHistory({
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
-            <History className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">History</span>
-          </Button>
+          {children || (
+            <Button variant="outline" size="sm">
+              <History className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">History</span>
+            </Button>
+          )}
         </DialogTrigger>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

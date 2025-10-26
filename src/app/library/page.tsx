@@ -23,33 +23,33 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-900 overflow-x-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.05),transparent_50%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)]" />
 
-      <div className="relative z-10 container mx-auto py-4 px-4 sm:py-6">
+      <div className="relative z-10 container mx-auto py-4 px-4 sm:py-6 max-w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
-          <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4 w-full">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push('/dashboard')}
               title="Back to Dashboard"
-              className="hover:bg-white/10 text-white"
+              className="hover:bg-white/10 text-white flex-shrink-0"
             >
               <Home className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex-shrink-0">
                 <LibraryIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent truncate">
                   Prompt Library
                 </h1>
-                <p className="text-sm sm:text-base text-gray-400 mt-1">
+                <p className="text-sm sm:text-base text-gray-400 mt-1 truncate">
                   Manage and organize your prompts
                 </p>
               </div>
@@ -87,40 +87,40 @@ export default function LibraryPage() {
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg">
               {/* Search and View Mode */}
               <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+                  <div className="relative flex-1 min-w-0">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400 flex-shrink-0" />
                     <Input
                       placeholder="Search prompts..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500"
+                      className="w-full pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500"
                     />
                   </div>
-                  <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-md w-full sm:w-auto p-1">
+                  <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-md w-full sm:w-auto p-1 flex-shrink-0">
                     <Button
                       variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('list')}
-                      className={`rounded-r-none flex-1 sm:flex-none ${
+                      className={`rounded-r-none flex-1 sm:flex-none min-w-0 ${
                         viewMode === 'list'
                           ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
                           : 'text-gray-400 hover:text-white hover:bg-white/10'
                       }`}
                     >
-                      <LayoutList className="h-4 w-4" />
+                      <LayoutList className="h-4 w-4 flex-shrink-0" />
                     </Button>
                     <Button
                       variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('grid')}
-                      className={`rounded-l-none flex-1 sm:flex-none ${
+                      className={`rounded-l-none flex-1 sm:flex-none min-w-0 ${
                         viewMode === 'grid'
                           ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
                           : 'text-gray-400 hover:text-white hover:bg-white/10'
                       }`}
                     >
-                      <LayoutGrid className="h-4 w-4" />
+                      <LayoutGrid className="h-4 w-4 flex-shrink-0" />
                     </Button>
                   </div>
                 </div>

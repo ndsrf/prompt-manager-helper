@@ -12,6 +12,7 @@ import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ExtensionTokens } from '@/components/settings/ExtensionTokens';
+import { ThemeSelector } from '@/components/settings/ThemeSelector';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -276,6 +277,11 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Theme Section */}
+        <div className="mt-6">
+          <ThemeSelector />
+        </div>
 
         {/* Extension Tokens Section */}
         <Card className="mt-6">
