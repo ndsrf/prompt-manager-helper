@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Search, Star, Settings, LogOut, Plus, Loader2, Copy, Check } from "lucide-react"
 import type { Prompt, AuthState } from "~/lib/types"
 import { cn } from "~/lib/utils"
+import { getAuthState } from "~/lib/storage"
 import "~/style.css"
 
 function IndexPopup() {
@@ -264,7 +265,21 @@ function PromptCard({ prompt, onClick }: { prompt: Prompt; onClick: () => void }
     e.stopPropagation() // Prevent triggering the parent onClick
 
     try {
-      await navigator.clipboard.writeText(prompt.content)
+      let content = prompt.content
+
+      // Apply custom instructions if enabled for this prompt
+      if (prompt.applyCustomInstructions !== false) {
+        const authState = await getAuthState()
+        const customInstructions = authState?.user?.customInstructions
+
+        if (customInstructions && customInstructions.trim()) {
+          // Prepend custom instructions to the prompt content
+          content = `${customInstructions.trim()}\n\n---\n\n${content}`
+          console.log('[Popup] Applied custom instructions to copied prompt')
+        }
+      }
+
+      await navigator.clipboard.writeText(content)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
