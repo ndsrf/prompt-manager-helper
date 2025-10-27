@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { trpc } from '@/lib/trpc/client';
 
@@ -34,7 +34,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Apply theme to document
-  const applyTheme = (newTheme: Theme) => {
+  const applyTheme = useCallback((newTheme: Theme) => {
     if (typeof window === 'undefined') return;
 
     const root = document.documentElement;
@@ -56,7 +56,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     setResolvedTheme(themeToApply);
-  };
+  }, []);
 
   // Set theme and persist to localStorage
   const setTheme = (newTheme: Theme) => {
@@ -93,12 +93,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [userSettings, isInitialized]);
+  }, [userSettings, isInitialized, applyTheme, theme]);
 
   // Re-apply theme when it changes
   useEffect(() => {
     applyTheme(theme);
-  }, [theme]);
+  }, [theme, applyTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
