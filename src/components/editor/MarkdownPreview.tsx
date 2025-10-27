@@ -15,22 +15,22 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
       <Label className="text-sm font-semibold mb-3 block">
         Markdown Preview
       </Label>
-      <div className="prose prose-sm max-w-none dark:prose-invert">
+      <div className="prose prose-sm max-w-none dark:prose-invert text-foreground">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
             // Custom styling for markdown elements
             h1: ({ node, ...props }) => (
-              <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />
+              <h1 className="text-2xl font-bold mt-4 mb-2 text-foreground" {...props} />
             ),
             h2: ({ node, ...props }) => (
-              <h2 className="text-xl font-bold mt-3 mb-2" {...props} />
+              <h2 className="text-xl font-bold mt-3 mb-2 text-foreground" {...props} />
             ),
             h3: ({ node, ...props }) => (
-              <h3 className="text-lg font-bold mt-2 mb-1" {...props} />
+              <h3 className="text-lg font-bold mt-2 mb-1 text-foreground" {...props} />
             ),
             p: ({ node, ...props }) => (
-              <p className="mb-2 text-sm leading-relaxed" {...props} />
+              <p className="mb-2 text-sm leading-relaxed text-foreground" {...props} />
             ),
             ul: ({ node, ...props }) => (
               <ul className="list-disc list-inside mb-2 space-y-1" {...props} />
@@ -39,17 +39,17 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
               <ol className="list-decimal list-inside mb-2 space-y-1" {...props} />
             ),
             li: ({ node, ...props }) => (
-              <li className="text-sm" {...props} />
+              <li className="text-sm text-foreground" {...props} />
             ),
             code: ({ node, inline, ...props }: any) =>
               inline ? (
                 <code
-                  className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono"
+                  className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-foreground"
                   {...props}
                 />
               ) : (
                 <code
-                  className="block bg-muted p-3 rounded text-xs font-mono overflow-x-auto my-2"
+                  className="block bg-muted p-3 rounded text-xs font-mono overflow-x-auto my-2 text-foreground"
                   {...props}
                 />
               ),
@@ -73,10 +73,10 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
               </div>
             ),
             th: ({ node, ...props }) => (
-              <th className="border border-border px-3 py-2 bg-muted font-semibold text-left text-sm" {...props} />
+              <th className="border border-border px-3 py-2 bg-muted font-semibold text-left text-sm text-foreground" {...props} />
             ),
             td: ({ node, ...props }) => (
-              <td className="border border-border px-3 py-2 text-sm" {...props} />
+              <td className="border border-border px-3 py-2 text-sm text-foreground" {...props} />
             ),
           }}
         >

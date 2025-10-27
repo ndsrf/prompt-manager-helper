@@ -81,36 +81,38 @@ export function CodeEditor({ value, onChange, variables }: CodeEditorProps) {
   }, [onChange]);
 
   const extensions = useMemo(() => {
-    // Theme-aware colors
+    // Theme-aware colors with high contrast
     const theme = isDark ? {
       background: resolvedTheme === 'futuristic' ? 'hsl(240, 10%, 5%)' : 'hsl(222.2, 84%, 4.9%)',
-      foreground: resolvedTheme === 'futuristic' ? 'hsl(180, 100%, 90%)' : 'hsl(210, 40%, 98%)',
+      // High contrast: very light text on dark background
+      foreground: resolvedTheme === 'futuristic' ? 'hsl(180, 100%, 95%)' : 'hsl(0, 0%, 98%)',
       gutter: resolvedTheme === 'futuristic' ? 'hsl(240, 10%, 8%)' : 'hsl(217.2, 32.6%, 12%)',
       activeGutter: resolvedTheme === 'futuristic' ? 'hsl(240, 10%, 10%)' : 'hsl(217.2, 32.6%, 15%)',
       selection: resolvedTheme === 'futuristic' ? 'hsl(180, 100%, 50%, 0.15)' : 'hsl(217.2, 91.2%, 59.8%, 0.15)',
       activeLine: resolvedTheme === 'futuristic' ? 'hsl(240, 10%, 7%)' : 'hsl(217.2, 32.6%, 10%)',
       variableDefined: {
         bg: resolvedTheme === 'futuristic' ? 'rgba(0, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.15)',
-        color: resolvedTheme === 'futuristic' ? 'hsl(180, 100%, 60%)' : 'rgb(96, 165, 250)',
+        color: resolvedTheme === 'futuristic' ? 'hsl(180, 100%, 70%)' : 'rgb(147, 197, 253)',
       },
       variableUndefined: {
         bg: resolvedTheme === 'futuristic' ? 'rgba(255, 0, 100, 0.1)' : 'rgba(239, 68, 68, 0.15)',
-        color: resolvedTheme === 'futuristic' ? 'hsl(330, 100%, 60%)' : 'rgb(248, 113, 113)',
+        color: resolvedTheme === 'futuristic' ? 'hsl(330, 100%, 70%)' : 'rgb(252, 165, 165)',
       },
     } : {
       background: 'hsl(0, 0%, 100%)',
-      foreground: 'hsl(222.2, 84%, 4.9%)',
+      // High contrast: very dark text on light background
+      foreground: 'hsl(0, 0%, 5%)',
       gutter: 'hsl(210, 40%, 98%)',
       activeGutter: 'hsl(210, 40%, 96%)',
       selection: 'hsl(221.2, 83.2%, 53.3%, 0.1)',
       activeLine: 'hsl(210, 40%, 98%)',
       variableDefined: {
         bg: 'rgba(59, 130, 246, 0.1)',
-        color: 'rgb(59, 130, 246)',
+        color: 'rgb(29, 78, 216)',
       },
       variableUndefined: {
         bg: 'rgba(239, 68, 68, 0.1)',
-        color: 'rgb(239, 68, 68)',
+        color: 'rgb(185, 28, 28)',
       },
     };
 
@@ -128,6 +130,14 @@ export function CodeEditor({ value, onChange, variables }: CodeEditorProps) {
           minHeight: '300px',
           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
           caretColor: theme.foreground,
+          color: theme.foreground,
+          backgroundColor: theme.background,
+        },
+        '.cm-scroller': {
+          backgroundColor: theme.background,
+        },
+        '.cm-line': {
+          color: theme.foreground,
         },
         '.cm-cursor, .cm-dropCursor': {
           borderLeftColor: theme.foreground,
@@ -147,7 +157,7 @@ export function CodeEditor({ value, onChange, variables }: CodeEditorProps) {
           backgroundColor: theme.activeGutter,
         },
         '.cm-lineNumbers .cm-gutterElement': {
-          color: isDark ? 'hsl(215, 20.2%, 65.1%)' : 'hsl(215.4, 16.3%, 46.9%)',
+          color: isDark ? 'hsl(0, 0%, 70%)' : 'hsl(0, 0%, 40%)',
         },
         '.cm-variable-defined': {
           backgroundColor: theme.variableDefined.bg,
