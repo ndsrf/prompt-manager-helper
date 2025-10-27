@@ -78,6 +78,7 @@ export const aiRouter = createTRPCRouter({
         content: z.string().min(1),
         targetLlm: z.string().optional(),
         context: z.string().optional(),
+        framework: z.enum(['default', 'raptor', 'react']).optional().default('default'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -120,6 +121,7 @@ export const aiRouter = createTRPCRouter({
           content: input.content,
           targetLlm: input.targetLlm,
           context: input.context,
+          framework: input.framework,
         });
 
         // Log the improvement
@@ -131,6 +133,7 @@ export const aiRouter = createTRPCRouter({
             entityId: input.promptId || userId,
             metadata: {
               targetLlm: input.targetLlm,
+              framework: input.framework,
               score: result.score,
               changesCount: result.changes.length,
             },

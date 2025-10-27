@@ -39,6 +39,7 @@ export interface ImprovePromptOptions {
   content: string;
   targetLlm?: string;
   context?: string;
+  framework?: 'default' | 'raptor' | 'react';
 }
 
 export interface ImprovePromptResult {
@@ -114,6 +115,92 @@ export async function testPrompt(
 }
 
 /**
+ * Get framework-specific improvement instructions
+ */
+function getFrameworkInstructions(framework: string = 'default'): string {
+  const instructions: Record<string, string> = {
+    default: `Your task is to analyze and improve the given prompt following these steps:
+
+1. **Analyze Current State**
+   - Clarity: Is the prompt clear and unambiguous?
+   - Specificity: Are requirements well-defined?
+   - Structure: Is information well-organized?
+   - Context Awareness: Does it provide necessary background?
+
+2. **Identify Issues**
+   - Vagueness or ambiguity
+   - Missing context or requirements
+   - Poor structure or formatting
+   - Ineffective language patterns
+
+3. **Generate Improved Version**
+   - Maintain the original intent
+   - Enhance clarity and specificity
+   - Optimize for the target LLM
+   - Add helpful structure and formatting`,
+
+    raptor: `Your task is to restructure the prompt using the RAPTOR framework:
+
+**Role** – Define the AI's persona
+   - Who should the AI act as?
+   - What expertise or perspective should it have?
+
+**Aim** – Set a clear task
+   - What is the specific objective?
+   - What should be accomplished?
+
+**Parameters** – Establish scope and constraints
+   - What are the boundaries?
+   - What limitations or requirements exist?
+
+**Tone** – Determine communication style
+   - What voice should be used?
+   - How formal or casual should responses be?
+
+**Output** – Specify the response format
+   - What format is expected?
+   - What structure should the response follow?
+
+**Review** – Enable iteration or refinement
+   - What criteria define success?
+   - How can the response be improved?
+
+Transform the original prompt into this structured format, ensuring each component is clearly defined.`,
+
+    react: `Your task is to transform the prompt to use the ReAct (Reason + Act) framework:
+
+Structure the prompt to instruct the AI to follow this pattern for every response:
+
+1. **REASON (Summarized Trace)**: Provide a clear, step-by-step public explanation of reasoning
+   - Use explicit logic and deductions
+   - Show the thought process transparently
+   - Approximate the full reasoning as closely as possible
+
+2. **ACT**: Take a specific action
+   - Perform calculations, searches, or analysis
+   - Propose tests or solutions
+   - Ask clarifying questions if needed
+
+3. **OBSERVATION/RESULT**: Show what came from the action
+   - Present findings clearly
+   - Document outcomes
+
+4. **LOOP**: Refine reasoning based on results
+   - Analyze what was learned
+   - Determine next steps
+   - Repeat steps 1-3 until sufficient information is gathered
+
+5. **STOP + FINAL ANSWER**: Provide the complete solution
+   - Give a clear, concise final answer
+   - Summarize key insights
+
+Transform the original prompt to explicitly request this structured reasoning approach.`,
+  };
+
+  return instructions[framework] || instructions.default;
+}
+
+/**
  * Get LLM-specific optimization guidelines
  */
 function getLLMGuidelines(targetLlm: string): string {
@@ -160,7 +247,7 @@ function getLLMGuidelines(targetLlm: string): string {
 export async function improvePrompt(
   options: ImprovePromptOptions
 ): Promise<ImprovePromptResult> {
-  const { content, targetLlm = 'any', context = '' } = options;
+  const { content, targetLlm = 'any', context = '', framework = 'default' } = options;
 
   const openai = getOpenAI();
   if (!openai) {
@@ -169,33 +256,15 @@ export async function improvePrompt(
 
   try {
     const llmGuidelines = getLLMGuidelines(targetLlm);
+    const frameworkInstructions = getFrameworkInstructions(framework);
 
     const systemPrompt = `You are an expert prompt engineer with deep knowledge of LLM capabilities and best practices.
 
-Your task is to analyze and improve the given prompt following these steps:
+${frameworkInstructions}
 
-1. **Analyze Current State**
-   - Clarity: Is the prompt clear and unambiguous?
-   - Specificity: Are requirements well-defined?
-   - Structure: Is information well-organized?
-   - Context Awareness: Does it provide necessary background?
+${targetLlm !== 'any' ? `\n**Target LLM Best Practices**\n${targetLlm.toUpperCase()} Guidelines:\n${llmGuidelines}` : ''}
 
-2. **Identify Issues**
-   - Vagueness or ambiguity
-   - Missing context or requirements
-   - Poor structure or formatting
-   - Ineffective language patterns
-
-3. **Apply Best Practices**
-${targetLlm !== 'any' ? `   Target LLM: ${targetLlm.toUpperCase()}\n${llmGuidelines}` : llmGuidelines}
-
-4. **Generate Improved Version**
-   - Maintain the original intent
-   - Enhance clarity and specificity
-   - Optimize for the target LLM
-   - Add helpful structure and formatting
-
-${context ? `Additional Context: ${context}` : ''}
+${context ? `\n**Additional Context**: ${context}` : ''}
 
 Respond in JSON format with these fields:
 {

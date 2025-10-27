@@ -15,6 +15,7 @@ import {
   XCircle,
   ArrowRight,
   Copy,
+  HelpCircle,
 } from 'lucide-react';
 import {
   Dialog,
@@ -24,6 +25,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const FRAMEWORK_DESCRIPTIONS = {
+  default: {
+    label: 'Default',
+    description:
+      'Enhances your prompt by improving clarity, specificity, and structure. Analyzes the prompt for effectiveness across multiple dimensions and provides targeted improvements while maintaining your original intent.',
+  },
+  raptor: {
+    label: 'RAPTOR Framework',
+    description:
+      'Role – Define the AI\'s persona. Aim – Set a clear task. Parameters – Establish scope and constraints. Tone – Determine communication style. Output – Specify the response format. Review – Enable iteration or refinement.',
+  },
+  react: {
+    label: 'REACT Framework',
+    description:
+      'You are an assistant that follows the ReAct (Reason + Act) framework, adapted for maximum clarity while respecting hidden reasoning rules.\n\nFor every step:\n\nREASON (Summarized Trace): Provide a clear, step-by-step public explanation of your reasoning process. Use explicit logic, calculations, or deductions in natural language. This should approximate the full thought process as closely as possible, while staying within the boundary of shareable reasoning.\n\nACT: Take an action (e.g., perform a calculation, search, summarize, propose a test, ask a clarifying question).\n\nOBSERVATION/RESULT: Show what came from the action.\n\nLOOP: Refine reasoning based on the result. Repeat steps 1–3 until enough information is gathered.\n\nSTOP + FINAL ANSWER: Provide a clear, concise final solution or explanation.',
+  },
+};
 
 interface PromptImproverProps {
   promptId: string;
@@ -41,6 +67,8 @@ export function PromptImprover({
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [framework, setFramework] = useState<'default' | 'raptor' | 'react'>('default');
+  const [showHelp, setShowHelp] = useState(false);
 
   const { data: usageStats } = trpc.ai.getUsageStats.useQuery();
 
@@ -66,6 +94,7 @@ export function PromptImprover({
       promptId,
       content,
       targetLlm: targetLlm || undefined,
+      framework,
     });
   };
 
@@ -114,6 +143,41 @@ export function PromptImprover({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {/* Framework Selection */}
+          {!result && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="framework" className="text-sm font-medium">
+                  Improvement Framework
+                </Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 rounded-full"
+                  onClick={() => setShowHelp(true)}
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+              </div>
+              <Select value={framework} onValueChange={(value) => setFramework(value as 'default' | 'raptor' | 'react')}>
+                <SelectTrigger id="framework">
+                  <SelectValue placeholder="Select a framework" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">
+                    {FRAMEWORK_DESCRIPTIONS.default.label}
+                  </SelectItem>
+                  <SelectItem value="raptor">
+                    {FRAMEWORK_DESCRIPTIONS.raptor.label}
+                  </SelectItem>
+                  <SelectItem value="react">
+                    {FRAMEWORK_DESCRIPTIONS.react.label}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Action Button */}
           {!result && (
             <Button
@@ -228,7 +292,7 @@ export function PromptImprover({
                   <Label className="text-sm font-semibold mb-2 block">
                     Original
                   </Label>
-                  <div className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 p-3 rounded max-h-64 overflow-y-auto">
+                  <div className="text-sm text-foreground whitespace-pre-wrap bg-muted/50 p-3 rounded max-h-64 overflow-y-auto">
                     {content}
                   </div>
                 </Card>
@@ -244,7 +308,7 @@ export function PromptImprover({
                       Copy
                     </Button>
                   </div>
-                  <div className="text-sm whitespace-pre-wrap bg-blue-50 p-3 rounded max-h-64 overflow-y-auto border border-blue-200">
+                  <div className="text-sm text-foreground whitespace-pre-wrap bg-muted p-3 rounded max-h-64 overflow-y-auto border border-primary/20">
                     {result.improved}
                   </div>
                 </Card>
@@ -259,8 +323,8 @@ export function PromptImprover({
                   <ul className="space-y-2">
                     {result.suggestions.map((suggestion: string, index: number) => (
                       <li key={index} className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">{suggestion}</span>
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-foreground">{suggestion}</span>
                       </li>
                     ))}
                   </ul>
@@ -291,7 +355,7 @@ export function PromptImprover({
                             Removed
                           </Badge>
                         )}
-                        <span className="text-sm flex-1">{change.description}</span>
+                        <span className="text-sm text-foreground flex-1">{change.description}</span>
                       </li>
                     ))}
                   </ul>
@@ -328,6 +392,52 @@ export function PromptImprover({
           )}
         </div>
       </DialogContent>
+
+      {/* Help Dialog */}
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Improvement Frameworks</DialogTitle>
+            <DialogDescription>
+              Choose the framework that best fits your prompt improvement needs
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            {/* Default Framework */}
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">Default</Badge>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed">
+                {FRAMEWORK_DESCRIPTIONS.default.description}
+              </p>
+            </Card>
+
+            {/* RAPTOR Framework */}
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">RAPTOR</Badge>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                {FRAMEWORK_DESCRIPTIONS.raptor.description}
+              </p>
+            </Card>
+
+            {/* REACT Framework */}
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">REACT</Badge>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                {FRAMEWORK_DESCRIPTIONS.react.description}
+              </p>
+            </Card>
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setShowHelp(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
