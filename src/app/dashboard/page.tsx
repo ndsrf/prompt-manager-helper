@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signOut } from 'next-auth/react';
 import { trpc } from '@/lib/trpc/client';
-import { Library, Globe, User, LogOut, Sparkles, Folder, Tags, Share2, Plus, ArrowRight } from 'lucide-react';
+import { Library, Globe, User, LogOut, Sparkles, Folder, Tags, Share2, Plus, ArrowRight, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="group p-4 rounded-xl bg-gradient-to-r from-gray-600/10 to-gray-500/10 border border-gray-500/20 transition-all">
+              <div className="group p-4 rounded-xl bg-gradient-to-r from-emerald-600/10 to-green-600/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1">
                     <p className="font-medium text-white flex items-center gap-2">
@@ -275,10 +275,11 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <Button
-                    disabled
-                    className="w-full sm:w-auto bg-white/5 text-gray-500 border-white/5 cursor-not-allowed"
+                    onClick={() => window.open('https://chromewebstore.google.com/detail/prompteasy-ai-prompt-mana/fjipcaafhklflefdpopcppjobnmoekci', '_blank')}
+                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white border-0"
                   >
-                    Coming Soon
+                    Install Extension
+                    <ExternalLink className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>
