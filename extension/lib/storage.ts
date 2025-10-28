@@ -76,7 +76,7 @@ export async function getSettings(): Promise<Settings> {
     autoInsert: false,
     showVariablePrompt: true,
     cacheEnabled: true,
-    syncInterval: 300000,
+    syncInterval: 600000, // 10 minutes (increased from 5 to be more conservative with rate limits)
   }
 }
 

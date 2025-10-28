@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
+import { checkLoginRateLimit } from './rate-limit';
 
 declare module 'next-auth' {
   interface Session {
@@ -41,9 +42,21 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Invalid credentials');
+        }
+
+        // Rate limit login attempts by email
+        // Use email as identifier to prevent brute force attacks on specific accounts
+        const rateLimitResult = await checkLoginRateLimit(credentials.email.toLowerCase());
+
+        if (!rateLimitResult.success) {
+          const resetDate = new Date(rateLimitResult.reset * 1000);
+          const minutesUntilReset = Math.ceil((rateLimitResult.reset * 1000 - Date.now()) / 60000);
+          throw new Error(
+            `Too many login attempts. Please try again in ${minutesUntilReset} minute${minutesUntilReset > 1 ? 's' : ''}.`
+          );
         }
 
         const user = await prisma.user.findUnique({

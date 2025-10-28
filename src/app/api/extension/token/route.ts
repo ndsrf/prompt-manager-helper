@@ -6,9 +6,10 @@ import {
   getUserExtensionTokens,
   revokeExtensionToken,
 } from '@/lib/extension-auth';
+import { withAPIRateLimit } from '@/lib/api-rate-limit';
 
 // GET /api/extension/token - List all extension tokens for the current user
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -17,6 +18,12 @@ export async function GET() {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // Check rate limit (100 req/min for authenticated users)
+    const rateLimitCheck = await withAPIRateLimit(request, session.user.id);
+    if (!rateLimitCheck.success) {
+      return rateLimitCheck.response!;
     }
 
     const tokens = await getUserExtensionTokens(session.user.id);
@@ -41,6 +48,12 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // Check rate limit (100 req/min for authenticated users)
+    const rateLimitCheck = await withAPIRateLimit(request, session.user.id);
+    if (!rateLimitCheck.success) {
+      return rateLimitCheck.response!;
     }
 
     const body = await request.json();
@@ -77,6 +90,12 @@ export async function DELETE(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // Check rate limit (100 req/min for authenticated users)
+    const rateLimitCheck = await withAPIRateLimit(request, session.user.id);
+    if (!rateLimitCheck.success) {
+      return rateLimitCheck.response!;
     }
 
     const { searchParams } = new URL(request.url);
