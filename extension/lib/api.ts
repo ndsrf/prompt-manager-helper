@@ -1,6 +1,20 @@
 import type { Prompt, AuthState } from './types'
 import { getAuthState, getSettings, setAuthState } from './storage'
 
+// Rate limit error type
+export class RateLimitError extends Error {
+  constructor(
+    message: string,
+    public retryAfter: number, // seconds until retry
+    public limit: number,
+    public remaining: number,
+    public reset: number
+  ) {
+    super(message)
+    this.name = 'RateLimitError'
+  }
+}
+
 // API Client using tRPC
 class ApiClient {
   private baseUrl: string = 'https://prompteasy.ndsrf.com'
@@ -14,66 +28,171 @@ class ApiClient {
     this.token = authState.token
   }
 
+  /**
+   * Parse rate limit headers from response
+   */
+  private parseRateLimitHeaders(response: Response): {
+    limit: number
+    remaining: number
+    reset: number
+  } {
+    const limit = parseInt(response.headers.get('X-RateLimit-Limit') || '0', 10)
+    const remaining = parseInt(response.headers.get('X-RateLimit-Remaining') || '0', 10)
+    const reset = parseInt(response.headers.get('X-RateLimit-Reset') || '0', 10)
+
+    return { limit, remaining, reset }
+  }
+
+  /**
+   * Sleep for specified milliseconds
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * Retry with exponential backoff
+   */
+  private async retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    initialDelay: number = 1000
+  ): Promise<T> {
+    let lastError: Error | null = null
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn()
+      } catch (error) {
+        lastError = error as Error
+
+        // Don't retry on rate limit errors - they have specific retry timing
+        if (error instanceof RateLimitError) {
+          throw error
+        }
+
+        // Don't retry on auth errors
+        if (error instanceof Error && error.message.includes('401')) {
+          throw error
+        }
+
+        // Last attempt - throw error
+        if (attempt === maxRetries) {
+          break
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = initialDelay * Math.pow(2, attempt)
+        console.log(`[API] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`)
+        await this.sleep(delay)
+      }
+    }
+
+    throw lastError
+  }
+
   private async trpcFetch<T>(
     procedure: string,
     input?: any,
     options: RequestInit = {}
   ): Promise<T> {
-    await this.initialize()
+    return this.retryWithBackoff(async () => {
+      await this.initialize()
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    }
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options.headers as Record<string, string>),
+      }
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`
-    }
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`
+      }
 
-    const url = `${this.baseUrl}/api/trpc/${procedure}${input ? `?input=${encodeURIComponent(JSON.stringify(input))}` : ''}`
+      const url = `${this.baseUrl}/api/trpc/${procedure}${input ? `?input=${encodeURIComponent(JSON.stringify(input))}` : ''}`
 
-    const response = await fetch(url, {
-      method: options.method || 'GET',
-      headers,
-      body: options.body,
+      const response = await fetch(url, {
+        method: options.method || 'GET',
+        headers,
+        body: options.body,
+      })
+
+      // Check for rate limiting
+      if (response.status === 429) {
+        const rateLimitInfo = this.parseRateLimitHeaders(response)
+        const retryAfter = response.headers.get('Retry-After')
+        const retrySeconds = retryAfter ? parseInt(retryAfter, 10) : 60
+
+        const error = await response.json().catch(() => ({
+          message: 'Too many requests. Please try again later.',
+        }))
+
+        throw new RateLimitError(
+          error.message || 'Rate limit exceeded',
+          retrySeconds,
+          rateLimitInfo.limit,
+          rateLimitInfo.remaining,
+          rateLimitInfo.reset
+        )
+      }
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Network error' }))
+        throw new Error(error.message || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.result.data as T
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }))
-      throw new Error(error.message || `HTTP ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data.result.data as T
   }
 
   private async trpcMutate<T>(
     procedure: string,
     input: any
   ): Promise<T> {
-    await this.initialize()
+    return this.retryWithBackoff(async () => {
+      await this.initialize()
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    }
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`
-    }
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`
+      }
 
-    const response = await fetch(`${this.baseUrl}/api/trpc/${procedure}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(input),
+      const response = await fetch(`${this.baseUrl}/api/trpc/${procedure}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(input),
+      })
+
+      // Check for rate limiting
+      if (response.status === 429) {
+        const rateLimitInfo = this.parseRateLimitHeaders(response)
+        const retryAfter = response.headers.get('Retry-After')
+        const retrySeconds = retryAfter ? parseInt(retryAfter, 10) : 60
+
+        const error = await response.json().catch(() => ({
+          message: 'Too many requests. Please try again later.',
+        }))
+
+        throw new RateLimitError(
+          error.message || 'Rate limit exceeded',
+          retrySeconds,
+          rateLimitInfo.limit,
+          rateLimitInfo.remaining,
+          rateLimitInfo.reset
+        )
+      }
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Network error' }))
+        throw new Error(error.message || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.result.data as T
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }))
-      throw new Error(error.message || `HTTP ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data.result.data as T
   }
 
   // Auth - Extension uses API tokens instead of session cookies
