@@ -3,6 +3,8 @@ import { ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
 import type { Session } from 'next-auth';
 import { validateExtensionToken } from '@/lib/extension-auth';
+import { checkAPIRateLimit } from '@/lib/rate-limit';
+import { getClientIdentifier, getRateLimitTier } from '@/lib/api-rate-limit';
 
 export const createTRPCContext = async (opts: { headers: Headers; session: Session | null }) => {
   // Check for extension token in Authorization header
@@ -22,10 +24,16 @@ export const createTRPCContext = async (opts: { headers: Headers; session: Sessi
     }
   }
 
+  // Create request-like object for rate limiting
+  const req = {
+    headers: opts.headers,
+  } as Request;
+
   return {
     session: user ? { user } as Session : null,
     prisma,
     headers: opts.headers,
+    req,
   };
 };
 
@@ -43,8 +51,36 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 });
 
 export const createTRPCRouter = t.router;
-export const publicProcedure = t.procedure;
 
+/**
+ * Rate limiting middleware for public procedures
+ * Uses anonymous tier limits (20 req/min)
+ */
+const enforceRateLimit = t.middleware(async ({ ctx, next }) => {
+  const identifier = getClientIdentifier(ctx.req, ctx.session?.user?.id);
+  const tier = ctx.session?.user ? getRateLimitTier('FREE') : getRateLimitTier();
+
+  const result = await checkAPIRateLimit(identifier, tier.limit, tier.window);
+
+  if (!result.success) {
+    const minutesUntilReset = Math.ceil((result.reset * 1000 - Date.now()) / 60000);
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: `Rate limit exceeded. Please try again in ${minutesUntilReset} minute${minutesUntilReset > 1 ? 's' : ''}.`,
+    });
+  }
+
+  return next();
+});
+
+/**
+ * Public procedure with rate limiting
+ */
+export const publicProcedure = t.procedure.use(enforceRateLimit);
+
+/**
+ * Authentication middleware
+ */
 const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
   if (!ctx.session || !ctx.session.user) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
@@ -56,4 +92,7 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
+/**
+ * Protected procedure with authentication and rate limiting
+ */
+export const protectedProcedure = t.procedure.use(enforceRateLimit).use(enforceUserIsAuthed);
