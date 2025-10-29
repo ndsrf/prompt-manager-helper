@@ -113,6 +113,9 @@ export const authOptions: NextAuthOptions = {
       // Allow Vercel preview deployments (*.vercel.app)
       const urlObj = new URL(url);
       if (urlObj.hostname.endsWith('.vercel.app')) {
+        // This is a preview deployment redirect
+        // We can't pass session cookies cross-domain, so return the URL as-is
+        // The preview deployment will need to handle authentication separately
         return url;
       }
 

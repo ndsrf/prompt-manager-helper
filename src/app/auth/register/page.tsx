@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { trpc } from '@/lib/trpc/client';
 import { UserPlus, Sparkles } from 'lucide-react';
-import { getOAuthCallbackUrl } from '@/lib/preview-deployment';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -55,17 +54,21 @@ export default function RegisterPage() {
   const handleGoogleSignIn = async () => {
     setError('');
     try {
-      // Get the appropriate callback URL (preview deployment or production)
-      const callbackUrl = getOAuthCallbackUrl('/dashboard');
-
       // Check if we're on a preview deployment
       if (typeof window !== 'undefined') {
-        const { isPreviewDeployment } = await import('@/lib/preview-deployment');
+        const { isPreviewDeployment, getCurrentUrl } = await import('@/lib/preview-deployment');
         const isPreview = isPreviewDeployment();
 
         if (isPreview) {
-          // On preview: redirect to production for OAuth, with preview URL as callback
+          // On preview: redirect to production for OAuth
+          // Production will handle OAuth, then redirect back to preview with a token
           const productionUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prompteasy.ndsrf.com';
+          const previewUrl = getCurrentUrl();
+
+          // Build the callback URL for production's preview-redirect page
+          const callbackUrl = `${productionUrl}/auth/preview-redirect?previewUrl=${encodeURIComponent(previewUrl)}&callbackPath=${encodeURIComponent('/dashboard')}`;
+
+          // Redirect to production OAuth
           const redirectUrl = `${productionUrl}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
           window.location.href = redirectUrl;
           return;
@@ -74,7 +77,7 @@ export default function RegisterPage() {
 
       // On production: normal OAuth flow
       await signIn('google', {
-        callbackUrl,
+        callbackUrl: '/dashboard',
       });
     } catch (err) {
       setError('An error occurred with Google sign in. Please try again.');

@@ -81,27 +81,3 @@ export function clearPreviewUrl(): void {
     console.error('[Preview Deployment] Failed to clear preview URL:', error);
   }
 }
-
-/**
- * Gets the appropriate callback URL for OAuth on preview deployments
- *
- * The flow:
- * 1. User on preview deployment clicks "Sign in"
- * 2. This function returns full preview URL as callbackUrl
- * 3. NextAuth initiates OAuth with Google using NEXTAUTH_URL (production) as redirect_uri
- * 4. Google redirects to production/api/auth/callback/google
- * 5. NextAuth processes auth and calls redirect callback with our callbackUrl (preview URL)
- * 6. Redirect callback allows preview URLs and redirects user to preview deployment
- *
- * On production:
- * - Returns relative path for normal OAuth flow
- */
-export function getOAuthCallbackUrl(path: string = '/dashboard'): string {
-  const previewUrl = getPreviewUrl();
-  if (previewUrl) {
-    // Return full preview URL so NextAuth redirects there after OAuth
-    return `${previewUrl}${path}`;
-  }
-  // On production, use relative path
-  return path;
-}
