@@ -25,11 +25,16 @@ Our implementation uses a client-side workaround:
 2. Navigate to **Settings** → **Environment Variables**
 3. Add or update `NEXTAUTH_URL`:
    - **Key:** `NEXTAUTH_URL`
-   - **Value:** Your production URL (e.g., `https://your-production-domain.com`)
+   - **Value:** Your production URL (e.g., `https://prompteasy.ndsrf.com`)
    - **Important:** Apply to **ALL environments** (Production, Preview, and Development)
+   - **Note:** Include `https://` and no trailing slash
 
 4. Click "Save"
 5. Redeploy your application (or trigger a new preview deployment)
+
+### Code Configuration
+
+The code includes `trustHost: true` in NextAuth configuration (`src/lib/auth.ts`). This is critical - it tells NextAuth to trust the `NEXTAUTH_URL` environment variable instead of using Vercel's request headers (which point to the preview deployment URL).
 
 ### Why This Works
 
@@ -90,14 +95,32 @@ Keep your Google OAuth configuration simple - **only add your production domain:
 
 ## Troubleshooting
 
-### Error: "redirect_uri doesn't comply with Google's OAuth 2.0 policy"
+### Error: "redirect_uri doesn't comply with Google's OAuth 2.0 policy" or "redirect_uri_mismatch"
 
-**Cause:** `NEXTAUTH_URL` is not set to production for preview deployments.
+This means Google is receiving a redirect_uri that isn't registered in Google Console.
+
+**Cause 1:** `NEXTAUTH_URL` is not set to production for preview deployments.
 
 **Fix:**
 1. Check Vercel environment variables
-2. Ensure `NEXTAUTH_URL` is set for **Preview** environment
-3. Redeploy to apply changes
+2. Ensure `NEXTAUTH_URL` is set for **Preview** environment (not just Production)
+3. Verify the value includes `https://` (e.g., `https://prompteasy.ndsrf.com`)
+4. Redeploy to apply changes
+
+**Cause 2:** NextAuth is ignoring `NEXTAUTH_URL` and using Vercel's headers.
+
+**Fix:**
+1. Verify `trustHost: true` is in `src/lib/auth.ts` (it should be)
+2. Check that you're running the latest deployed code
+3. Clear browser cache and try again
+
+**Cause 3:** The production URL isn't registered in Google Console.
+
+**Fix:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Edit your OAuth 2.0 Client ID
+3. Ensure your production callback is listed: `https://prompteasy.ndsrf.com/api/auth/callback/google`
+4. Save changes (may take a few minutes to propagate)
 
 ### Error: "Invalid callback URL"
 

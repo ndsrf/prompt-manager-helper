@@ -23,6 +23,9 @@ declare module 'next-auth' {
 }
 
 export const authOptions: NextAuthOptions = {
+  // Trust the NEXTAUTH_URL environment variable
+  // This ensures OAuth uses production URL even on preview deployments
+  trustHost: true,
   session: {
     strategy: 'jwt',
   },
