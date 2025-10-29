@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
-import { SignJWT } from 'jose';
+import { encode } from 'next-auth/jwt';
 
 /**
  * POST /api/auth/preview-session
@@ -54,17 +54,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create JWT session token (similar to how NextAuth does it)
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const sessionToken = await new SignJWT({
-      sub: dbUser.id,
-      email: dbUser.email,
-      name: dbUser.name,
-      iat: Math.floor(Date.now() / 1000),
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('30d')
-      .sign(secret);
+    // Create JWT session token using NextAuth's encode function
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const sessionToken = await encode({
+      secret,
+      token: {
+        sub: dbUser.id,
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+      },
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+    });
 
     // Set NextAuth session cookie
     const cookieStore = await cookies();
