@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { trpc } from '@/lib/trpc/client';
 import { UserPlus, Sparkles } from 'lucide-react';
+import { getOAuthCallbackUrl } from '@/lib/preview-deployment';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -54,8 +55,10 @@ export default function RegisterPage() {
   const handleGoogleSignIn = async () => {
     setError('');
     try {
+      // Get the appropriate callback URL (preview deployment or production)
+      const callbackUrl = getOAuthCallbackUrl('/dashboard');
       await signIn('google', {
-        callbackUrl: '/dashboard',
+        callbackUrl,
       });
     } catch (err) {
       setError('An error occurred with Google sign in. Please try again.');

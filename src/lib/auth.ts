@@ -91,6 +91,25 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Allow OAuth redirects to Vercel preview deployments
+      // This enables OAuth to work on preview deployments without additional Google Console configuration
+
+      // If the URL is relative, use it
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+
+      // If the URL is from the same origin, allow it
+      if (url.startsWith(baseUrl)) return url;
+
+      // Allow Vercel preview deployments (*.vercel.app)
+      const urlObj = new URL(url);
+      if (urlObj.hostname.endsWith('.vercel.app')) {
+        return url;
+      }
+
+      // Default to baseUrl for any other cases
+      return baseUrl;
+    },
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google') {
         // Check if user exists
