@@ -17,24 +17,35 @@ Our implementation uses a client-side workaround:
 
 ## Required Setup in Vercel
 
-**CRITICAL:** You must configure the `NEXTAUTH_URL` environment variable in your Vercel project settings.
+**CRITICAL:** You must configure two environment variables in your Vercel project settings.
 
 ### Step-by-Step Instructions
 
 1. Go to your Vercel project dashboard
 2. Navigate to **Settings** → **Environment Variables**
-3. Add or update `NEXTAUTH_URL`:
+3. Add or update these environment variables:
+
+   **Variable 1: NEXTAUTH_URL**
    - **Key:** `NEXTAUTH_URL`
-   - **Value:** Your production URL (e.g., `https://prompteasy.ndsrf.com`)
-   - **Important:** Apply to **ALL environments** (Production, Preview, and Development)
-   - **Note:** Include `https://` and no trailing slash
+   - **Value:** `https://prompteasy.ndsrf.com` (your production URL)
+   - **Environments:** Check **ALL three** boxes (Production, Preview, Development)
+   - **Note:** Include `https://` and **NO trailing slash**
 
-4. Click "Save"
-5. Redeploy your application (or trigger a new preview deployment)
+   **Variable 2: NEXTAUTH_URL_INTERNAL**
+   - **Key:** `NEXTAUTH_URL_INTERNAL`
+   - **Value:** `https://prompteasy.ndsrf.com` (same as NEXTAUTH_URL)
+   - **Environments:** Check **ALL three** boxes (Production, Preview, Development)
+   - **Note:** This forces server-side NextAuth calls to use production URL
 
-### Code Configuration
+4. Click "Save" for each variable
+5. Redeploy your application or trigger a new preview deployment
 
-The code includes `trustHost: true` in NextAuth configuration (`src/lib/auth.ts`). This is critical - it tells NextAuth to trust the `NEXTAUTH_URL` environment variable instead of using Vercel's request headers (which point to the preview deployment URL).
+### Why Both Variables Are Needed
+
+- `NEXTAUTH_URL`: Client-side OAuth redirect URI
+- `NEXTAUTH_URL_INTERNAL`: Server-side API calls (prevents Vercel from using internal URLs)
+
+Without both set to production for preview deployments, NextAuth will use Vercel's preview URL as the redirect_uri, causing Google to reject the OAuth request.
 
 ### Why This Works
 
@@ -107,12 +118,14 @@ This means Google is receiving a redirect_uri that isn't registered in Google Co
 3. Verify the value includes `https://` (e.g., `https://prompteasy.ndsrf.com`)
 4. Redeploy to apply changes
 
-**Cause 2:** NextAuth is ignoring `NEXTAUTH_URL` and using Vercel's headers.
+**Cause 2:** `NEXTAUTH_URL_INTERNAL` is not set.
 
 **Fix:**
-1. Verify `trustHost: true` is in `src/lib/auth.ts` (it should be)
-2. Check that you're running the latest deployed code
-3. Clear browser cache and try again
+1. Check Vercel environment variables
+2. Ensure **both** `NEXTAUTH_URL` and `NEXTAUTH_URL_INTERNAL` are set
+3. Both should have the same value: your production URL
+4. Both should be set for **all environments** (Production, Preview, Development)
+5. Redeploy after adding the variables
 
 **Cause 3:** The production URL isn't registered in Google Console.
 

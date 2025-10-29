@@ -23,9 +23,6 @@ declare module 'next-auth' {
 }
 
 export const authOptions: NextAuthOptions = {
-  // Trust the NEXTAUTH_URL environment variable
-  // This ensures OAuth uses production URL even on preview deployments
-  trustHost: true,
   session: {
     strategy: 'jwt',
   },
@@ -38,6 +35,15 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      authorization: {
+        params: {
+          // Force OAuth to use production URL for redirect_uri
+          // This is set via NEXTAUTH_URL environment variable
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
     CredentialsProvider({
       name: 'credentials',
