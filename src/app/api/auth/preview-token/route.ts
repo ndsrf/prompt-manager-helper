@@ -9,11 +9,12 @@ const tokenStore = new Map<string, { userId: string; expiresAt: number }>();
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now();
-    for (const [token, data] of tokenStore.entries()) {
+    // Use forEach instead of for...of to avoid TypeScript iteration issues
+    tokenStore.forEach((data, token) => {
       if (data.expiresAt < now) {
         tokenStore.delete(token);
       }
-    }
+    });
   }, 60000);
 }
 
