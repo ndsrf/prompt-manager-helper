@@ -1,19 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Force dynamic rendering - this page uses searchParams and cannot be statically generated
 export const dynamic = 'force-dynamic';
 
 /**
- * Preview deployment OAuth callback handler
- *
- * This page handles the redirect from production after OAuth.
- * It exchanges a one-time token for user credentials and creates a session
- * on the preview deployment.
+ * Preview deployment OAuth callback handler content
  */
-export default function PreviewCallbackPage() {
+function PreviewCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState('');
@@ -101,5 +97,33 @@ export default function PreviewCallbackPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Preview deployment OAuth callback handler
+ *
+ * This page handles the redirect from production after OAuth.
+ * It exchanges a one-time token for user credentials and creates a session
+ * on the preview deployment.
+ */
+export default function PreviewCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-900 flex items-center justify-center p-4">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-8 max-w-md w-full">
+          <div className="text-center">
+            <div className="text-purple-400 text-lg font-semibold mb-4">
+              🔐 Loading...
+            </div>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <PreviewCallbackContent />
+    </Suspense>
   );
 }
