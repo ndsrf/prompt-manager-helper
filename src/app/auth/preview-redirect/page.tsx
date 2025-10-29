@@ -18,10 +18,18 @@ function PreviewRedirectContent() {
   useEffect(() => {
     const generateTokenAndRedirect = async () => {
       try {
+        console.log('[PreviewRedirect] Starting redirect process');
+        console.log('[PreviewRedirect] Session status:', status);
+        console.log('[PreviewRedirect] Session data:', session);
+
         // Wait for session to be loaded
-        if (status === 'loading') return;
+        if (status === 'loading') {
+          console.log('[PreviewRedirect] Waiting for session to load...');
+          return;
+        }
 
         if (status === 'unauthenticated' || !session?.user?.id) {
+          console.error('[PreviewRedirect] Not authenticated!');
           setError('Not authenticated');
           return;
         }
@@ -29,12 +37,17 @@ function PreviewRedirectContent() {
         const previewUrl = searchParams.get('previewUrl');
         const callbackPath = searchParams.get('callbackPath') || '/dashboard';
 
+        console.log('[PreviewRedirect] Preview URL:', previewUrl);
+        console.log('[PreviewRedirect] Callback path:', callbackPath);
+
         if (!previewUrl) {
+          console.error('[PreviewRedirect] Missing preview URL!');
           setError('Missing preview URL');
           return;
         }
 
         // Generate one-time token
+        console.log('[PreviewRedirect] Generating token for user:', session.user.id);
         const response = await fetch('/api/auth/preview-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -42,10 +55,12 @@ function PreviewRedirectContent() {
         });
 
         if (!response.ok) {
+          console.error('[PreviewRedirect] Failed to generate token:', response.status);
           throw new Error('Failed to generate token');
         }
 
         const { token } = await response.json();
+        console.log('[PreviewRedirect] Token generated successfully');
 
         // Build preview callback URL
         const redirectUrl = new URL(previewUrl);
@@ -53,10 +68,12 @@ function PreviewRedirectContent() {
         redirectUrl.searchParams.set('token', token);
         redirectUrl.searchParams.set('callbackUrl', callbackPath);
 
+        console.log('[PreviewRedirect] Redirecting to:', redirectUrl.toString());
+
         // Redirect to preview deployment
         window.location.href = redirectUrl.toString();
       } catch (err) {
-        console.error('Preview redirect error:', err);
+        console.error('[PreviewRedirect] Error:', err);
         setError(err instanceof Error ? err.message : 'Failed to redirect');
       }
     };

@@ -58,17 +58,27 @@ export default function LoginPage() {
         const { isPreviewDeployment, getCurrentUrl } = await import('@/lib/preview-deployment');
         const isPreview = isPreviewDeployment();
 
+        console.log('[Login] Is preview deployment:', isPreview);
+
         if (isPreview) {
           // On preview: redirect to production for OAuth
           // Production will handle OAuth, then redirect back to preview with a token
           const productionUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prompteasy.ndsrf.com';
           const previewUrl = getCurrentUrl();
 
+          console.log('[Login] Production URL:', productionUrl);
+          console.log('[Login] Preview URL:', previewUrl);
+
           // Build the callback URL for production's preview-redirect page
           const callbackUrl = `${productionUrl}/auth/preview-redirect?previewUrl=${encodeURIComponent(previewUrl)}&callbackPath=${encodeURIComponent('/dashboard')}`;
 
+          console.log('[Login] Callback URL:', callbackUrl);
+
           // Redirect to production OAuth
           const redirectUrl = `${productionUrl}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+          console.log('[Login] Redirecting to:', redirectUrl);
+
           window.location.href = redirectUrl;
           return;
         }
