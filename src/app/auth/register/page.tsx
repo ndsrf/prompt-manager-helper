@@ -57,6 +57,22 @@ export default function RegisterPage() {
     try {
       // Get the appropriate callback URL (preview deployment or production)
       const callbackUrl = getOAuthCallbackUrl('/dashboard');
+
+      // Check if we're on a preview deployment
+      if (typeof window !== 'undefined') {
+        const { isPreviewDeployment } = await import('@/lib/preview-deployment');
+        const isPreview = isPreviewDeployment();
+
+        if (isPreview) {
+          // On preview: redirect to production for OAuth, with preview URL as callback
+          const productionUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prompteasy.ndsrf.com';
+          const redirectUrl = `${productionUrl}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+          window.location.href = redirectUrl;
+          return;
+        }
+      }
+
+      // On production: normal OAuth flow
       await signIn('google', {
         callbackUrl,
       });
