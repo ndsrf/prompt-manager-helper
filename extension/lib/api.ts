@@ -245,6 +245,21 @@ class ApiClient {
     }
   }
 
+  // Get current user profile (including custom instructions)
+  async getUserProfile(): Promise<{
+    id: string
+    email: string
+    name: string | null
+    customInstructions: string | null
+  }> {
+    return await this.trpcFetch<{
+      id: string
+      email: string
+      name: string | null
+      customInstructions: string | null
+    }>('user.me')
+  }
+
   // Prompts
   async getPrompts(params?: {
     search?: string

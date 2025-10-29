@@ -144,6 +144,7 @@ async function handleMessage(message: Message): Promise<any> {
 
     case 'SYNC_DATA':
       await syncPrompts()
+      await syncCustomInstructions()
       await syncSelectors()
       return { success: true, timestamp: new Date().toISOString() }
 
@@ -199,6 +200,37 @@ async function syncTheme(): Promise<void> {
   }
 }
 
+// Sync custom instructions from user profile
+async function syncCustomInstructions(): Promise<void> {
+  try {
+    const authState = await getAuthState()
+    if (!authState.isAuthenticated) {
+      console.log('[Background] Not authenticated, skipping custom instructions sync')
+      return
+    }
+
+    console.log('[Background] Syncing custom instructions...')
+    const userProfile = await apiClient.getUserProfile()
+
+    // Update auth state with latest custom instructions
+    await setAuthState({
+      ...authState,
+      user: {
+        ...authState.user!,
+        customInstructions: userProfile.customInstructions,
+      },
+    })
+
+    console.log('[Background] Custom instructions synced successfully')
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      console.warn('[Background] Rate limited during custom instructions sync. Will retry later.')
+    } else {
+      console.error('[Background] Error syncing custom instructions:', error)
+    }
+  }
+}
+
 // Sync selectors from server
 async function syncSelectors(): Promise<void> {
   try {
@@ -247,8 +279,9 @@ function filterPrompts(
 setInterval(async () => {
   const shouldSync = await needsSync()
   if (shouldSync) {
-    console.log('[Background] Auto-syncing prompts...')
+    console.log('[Background] Auto-syncing data...')
     await syncPrompts()
+    await syncCustomInstructions()
   }
 }, 60000) // Check every minute
 
@@ -257,6 +290,7 @@ setTimeout(async () => {
   const authState = await getAuthState()
   if (authState.isAuthenticated) {
     await syncPrompts()
+    await syncCustomInstructions()
     await syncTheme()
   }
   // Always sync selectors regardless of auth state
