@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// Force dynamic rendering - this page uses searchParams and cannot be statically generated
+export const dynamic = 'force-dynamic';
+
 /**
  * Preview deployment OAuth callback handler
  *

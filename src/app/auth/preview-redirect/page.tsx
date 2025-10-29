@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
+// Force dynamic rendering - this page uses searchParams and session, cannot be statically generated
+export const dynamic = 'force-dynamic';
+
 /**
  * Production intermediate page for generating preview deployment tokens
  *
