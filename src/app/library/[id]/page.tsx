@@ -110,27 +110,27 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
           Back to Library
         </Button>
 
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{prompt.title}</h1>
+            <h1 className="text-3xl font-bold mb-2 break-words">{prompt.title}</h1>
             {prompt.description && (
               <p className="text-muted-foreground">{prompt.description}</p>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handleToggleFavorite}
               className={prompt.isFavorite ? 'text-yellow-500' : ''}
             >
-              <Star className={`h-4 w-4 mr-2 ${prompt.isFavorite ? 'fill-current' : ''}`} />
-              {prompt.isFavorite ? 'Favorited' : 'Favorite'}
+              <Star className={`h-4 w-4 ${prompt.isFavorite ? 'fill-current' : ''}`} />
+              <span className="ml-2 hidden sm:inline">{prompt.isFavorite ? 'Favorited' : 'Favorite'}</span>
             </Button>
             <Button variant="outline" size="sm" onClick={handleCopy}>
-              <Copy className="h-4 w-4 mr-2" />
-              Copy
+              <Copy className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Copy</span>
             </Button>
             <ShareDialog
               promptId={id}
@@ -138,11 +138,12 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
               currentPrivacy={prompt.privacy as "private" | "shared" | "public"}
             />
             <Button variant="outline" size="sm" onClick={handleEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+              <Edit className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Edit</span>
             </Button>
             <Button variant="outline" size="sm" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+              <Trash2 className="h-4 w-4 text-destructive" />
+              <span className="ml-2 hidden sm:inline">Delete</span>
             </Button>
           </div>
         </div>
