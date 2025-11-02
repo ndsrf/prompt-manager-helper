@@ -77,6 +77,7 @@ export type DetectedLLM =
 export type MessageType =
   | 'GET_PROMPTS'
   | 'INSERT_PROMPT'
+  | 'COPY_PROMPT'
   | 'SAVE_PROMPT'
   | 'IMPROVE_PROMPT'
   | 'GET_AUTH_STATE'

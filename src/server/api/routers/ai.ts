@@ -62,6 +62,28 @@ export const aiRouter = createTRPCRouter({
           },
         });
 
+        // Track usage if promptId is provided
+        if (input.promptId) {
+          await ctx.prisma.promptUsage.create({
+            data: {
+              promptId: input.promptId,
+              userId,
+              llmUsed: input.llm,
+              context: 'tested_with_ai',
+            },
+          });
+
+          // Increment usage count
+          await ctx.prisma.prompt.update({
+            where: { id: input.promptId },
+            data: {
+              usageCount: {
+                increment: 1,
+              },
+            },
+          });
+        }
+
         return result;
       } catch (error: any) {
         throw new Error(`Test failed: ${error.message}`);

@@ -93,6 +93,8 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
     },
   });
 
+  const recordUsage = trpc.analytics.recordUsage.useMutation();
+
   const handleToggleFavorite = async (e: React.MouseEvent, promptId: string) => {
     e.stopPropagation();
     await toggleFavorite.mutateAsync({ id: promptId });
@@ -122,6 +124,17 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
       title: 'Copied to clipboard',
       description: 'The prompt content has been copied.',
     });
+
+    // Track usage when copying
+    try {
+      await recordUsage.mutateAsync({
+        promptId: prompt.id,
+        context: 'copied_from_list',
+      });
+    } catch (error) {
+      // Silently fail - don't disrupt the copy action
+      console.error('Failed to record usage:', error);
+    }
   };
 
   if (error) {

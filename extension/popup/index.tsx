@@ -282,6 +282,17 @@ function PromptCard({ prompt, onClick }: { prompt: Prompt; onClick: () => void }
       await navigator.clipboard.writeText(content)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+
+      // Track usage for copy action
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'COPY_PROMPT',
+          payload: { promptId: prompt.id }
+        })
+      } catch (error) {
+        console.error('[Popup] Failed to record copy usage:', error)
+        // Don't disrupt the copy action
+      }
     } catch (error) {
       console.error('Failed to copy prompt:', error)
     }

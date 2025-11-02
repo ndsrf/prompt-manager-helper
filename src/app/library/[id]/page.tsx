@@ -51,6 +51,8 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
     },
   });
 
+  const recordUsage = trpc.analytics.recordUsage.useMutation();
+
   const handleToggleFavorite = async () => {
     await toggleFavorite.mutateAsync({ id });
   };
@@ -72,6 +74,17 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
         title: 'Copied to clipboard',
         description: 'The prompt content has been copied.',
       });
+
+      // Track usage when copying
+      try {
+        await recordUsage.mutateAsync({
+          promptId: id,
+          context: 'copied_from_detail_view',
+        });
+      } catch (error) {
+        // Silently fail - don't disrupt the copy action
+        console.error('Failed to record usage:', error);
+      }
     }
   };
 

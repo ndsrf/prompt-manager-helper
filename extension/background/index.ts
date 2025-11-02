@@ -97,11 +97,33 @@ async function handleMessage(message: Message): Promise<any> {
     case 'INSERT_PROMPT':
       const { promptId } = message.payload
       const prompt = await apiClient.getPrompt(promptId)
-      // Increment usage count
-      await apiClient.incrementUsage(promptId)
+      // Track usage with proper context
+      try {
+        await apiClient.recordUsage({
+          promptId,
+          context: 'inserted_from_extension',
+        })
+      } catch (error) {
+        console.error('[Background] Failed to record usage:', error)
+        // Don't fail the operation if tracking fails
+      }
       // Update cache
       await syncPrompts()
       return prompt
+
+    case 'COPY_PROMPT':
+      const { promptId: copyPromptId } = message.payload
+      // Track usage for copy action
+      try {
+        await apiClient.recordUsage({
+          promptId: copyPromptId,
+          context: 'copied_from_extension',
+        })
+      } catch (error) {
+        console.error('[Background] Failed to record copy usage:', error)
+        // Don't fail the operation if tracking fails
+      }
+      return { success: true }
 
     case 'IMPROVE_PROMPT':
       const { content: promptContent, targetLlm: llm } = message.payload

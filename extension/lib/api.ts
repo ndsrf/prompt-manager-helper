@@ -158,6 +158,16 @@ class ApiClient {
     await this.trpcMutate('prompt.incrementUsage', { id })
   }
 
+  // Analytics - Usage tracking
+  async recordUsage(params: {
+    promptId: string
+    llmUsed?: string
+    success?: boolean
+    context?: string
+  }): Promise<void> {
+    await this.trpcMutate('analytics.recordUsage', params)
+  }
+
   // AI Improvements
   async improvePrompt(content: string, targetLlm?: string): Promise<{
     improved: string

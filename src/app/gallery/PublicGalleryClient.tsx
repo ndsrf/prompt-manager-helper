@@ -55,12 +55,25 @@ export function PublicGalleryClient() {
 
   const prompts = data?.pages.flatMap((page) => page.items) ?? [];
 
-  const handleCopyPrompt = (content: string, title: string) => {
-    void navigator.clipboard.writeText(content);
+  const recordUsage = trpc.analytics.recordUsage.useMutation();
+
+  const handleCopyPrompt = async (promptId: string, content: string, title: string) => {
+    await navigator.clipboard.writeText(content);
     toast({
       title: "Copied to clipboard",
       description: `"${title}" has been copied`,
     });
+
+    // Track usage when copying
+    try {
+      await recordUsage.mutateAsync({
+        promptId,
+        context: 'copied_from_gallery',
+      });
+    } catch (error) {
+      // Silently fail - don't disrupt the copy action
+      console.error('Failed to record usage:', error);
+    }
   };
 
   return (
@@ -287,7 +300,7 @@ export function PublicGalleryClient() {
                       <Button
                         size="sm"
                         className="bg-white/5 hover:bg-white/10 text-white border-white/10"
-                        onClick={() => handleCopyPrompt(prompt.content, prompt.title)}
+                        onClick={() => void handleCopyPrompt(prompt.id, prompt.content, prompt.title)}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>

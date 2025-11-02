@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signOut } from 'next-auth/react';
 import { trpc } from '@/lib/trpc/client';
-import { Library, Globe, User, LogOut, Sparkles, Folder, Tags, Share2, Plus, ArrowRight } from 'lucide-react';
+import { Library, Globe, User, LogOut, Sparkles, Folder, Tags, Share2, Plus, ArrowRight, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -85,6 +85,14 @@ export default function DashboardPage() {
             >
               <Globe className="h-4 w-4 mr-2" />
               Gallery
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/analytics')}
+              className="w-full sm:w-auto justify-start sm:justify-center text-white hover:bg-white/10"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
             </Button>
             <Link href="/profile" className="w-full sm:w-auto">
               <Button

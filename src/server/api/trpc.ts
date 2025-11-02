@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { prisma } from '@/lib/prisma';
 import type { Session } from 'next-auth';
 import { validateExtensionToken } from '@/lib/extension-auth';
+import { checkRateLimit, type RateLimitConfig } from '@/lib/rate-limit';
 
 export const createTRPCContext = async (opts: { headers: Headers; session: Session | null }) => {
   // Check for extension token in Authorization header
@@ -55,5 +56,28 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
     },
   });
 });
+
+/**
+ * Rate limiting middleware factory
+ * Creates a middleware that enforces rate limits based on the provided config
+ */
+export const createRateLimitMiddleware = (config: RateLimitConfig) => {
+  return t.middleware(({ ctx, next }) => {
+    // Get identifier from context (user ID or 'anonymous')
+    const identifier = ctx.session?.user?.id || 'anonymous';
+
+    const result = checkRateLimit(identifier, config);
+
+    if (!result.success) {
+      const retryAfter = Math.ceil((result.reset - Date.now()) / 1000);
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: `Rate limit exceeded. Try again in ${retryAfter} seconds.`,
+      });
+    }
+
+    return next();
+  });
+};
 
 export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);

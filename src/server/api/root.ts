@@ -9,6 +9,7 @@ import { versionRouter } from './routers/version';
 import { shareRouter } from './routers/share';
 import { commentRouter } from './routers/comment';
 import { selectorRouter } from './routers/selector';
+import { analyticsRouter } from './routers/analytics';
 
 export const appRouter = createTRPCRouter({
   user: userRouter,
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   share: shareRouter,
   comment: commentRouter,
   selector: selectorRouter,
+  analytics: analyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;
