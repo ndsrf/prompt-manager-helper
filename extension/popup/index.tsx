@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Search, Star, Settings, LogOut, Plus, Loader2, Copy, Check } from "lucide-react"
+import { Search, Star, Settings, LogOut, Plus, Loader2, Copy, Check, ThumbsUp } from "lucide-react"
 import type { Prompt, AuthState } from "~/lib/types"
 import { cn } from "~/lib/utils"
 import { getAuthState } from "~/lib/storage"
@@ -260,6 +260,7 @@ function IndexPopup() {
 
 function PromptCard({ prompt, onClick }: { prompt: Prompt; onClick: () => void }) {
   const [copied, setCopied] = useState(false)
+  const [markedSuccess, setMarkedSuccess] = useState(false)
 
   const handleCopyClick = async (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent triggering the parent onClick
@@ -298,6 +299,21 @@ function PromptCard({ prompt, onClick }: { prompt: Prompt; onClick: () => void }
     }
   }
 
+  const handleMarkSuccessClick = async (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the parent onClick
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'MARK_SUCCESS',
+        payload: { promptId: prompt.id }
+      })
+      setMarkedSuccess(true)
+      setTimeout(() => setMarkedSuccess(false), 2000)
+    } catch (error) {
+      console.error('[Popup] Failed to mark prompt as successful:', error)
+    }
+  }
+
   return (
     <button
       onClick={onClick}
@@ -315,6 +331,17 @@ function PromptCard({ prompt, onClick }: { prompt: Prompt; onClick: () => void }
               <Check className="w-3.5 h-3.5 text-green-600" />
             ) : (
               <Copy className="w-3.5 h-3.5 text-gray-500" />
+            )}
+          </button>
+          <button
+            onClick={handleMarkSuccessClick}
+            className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+            title="Mark as successful"
+          >
+            {markedSuccess ? (
+              <Check className="w-3.5 h-3.5 text-green-600" />
+            ) : (
+              <ThumbsUp className="w-3.5 h-3.5 text-gray-500" />
             )}
           </button>
           {prompt.isFavorite && <Star className="w-4 h-4 text-yellow-500 fill-current" />}

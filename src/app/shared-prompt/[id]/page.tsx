@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Star, Copy, ArrowLeft, Calendar, Folder, History, User, BookmarkPlus } from 'lucide-react';
+import { Star, Copy, ArrowLeft, Calendar, Folder, History, User, BookmarkPlus, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +78,27 @@ export default function SharedPromptViewPage({ params }: SharedPromptViewPagePro
     }
   };
 
+  const handleMarkSuccess = async () => {
+    try {
+      await recordUsage.mutateAsync({
+        promptId: id,
+        success: true,
+        context: 'marked_successful_from_shared_view',
+      });
+      toast({
+        title: 'Marked as successful',
+        description: 'This prompt has been marked as successful.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to mark prompt as successful.',
+        variant: 'destructive',
+      });
+      console.error('Failed to mark success:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-6 max-w-4xl">
@@ -139,6 +160,10 @@ export default function SharedPromptViewPage({ params }: SharedPromptViewPagePro
             <Button variant="outline" size="sm" onClick={handleCopy}>
               <Copy className="h-4 w-4 mr-2" />
               Copy Content
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleMarkSuccess} className="text-green-600 hover:text-green-700">
+              <ThumbsUp className="h-4 w-4 mr-2" />
+              Mark Success
             </Button>
           </div>
         </div>

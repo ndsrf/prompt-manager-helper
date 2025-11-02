@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, MoreVertical, Trash2, Edit, Copy, Folder, Calendar, History, GitCompare } from 'lucide-react';
+import { Star, MoreVertical, Trash2, Edit, Copy, Folder, Calendar, History, GitCompare, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -134,6 +134,27 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
     } catch (error) {
       // Silently fail - don't disrupt the copy action
       console.error('Failed to record usage:', error);
+    }
+  };
+
+  const handleMarkSuccess = async (promptId: string) => {
+    try {
+      await recordUsage.mutateAsync({
+        promptId: promptId,
+        success: true,
+        context: 'marked_successful_from_list',
+      });
+      toast({
+        title: 'Marked as successful',
+        description: 'This prompt has been marked as successful.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to mark prompt as successful.',
+        variant: 'destructive',
+      });
+      console.error('Failed to mark success:', error);
     }
   };
 
@@ -302,6 +323,10 @@ export function PromptList({ folderId, tagIds, search }: PromptListProps) {
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopy(prompt); }}>
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Content
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkSuccess(prompt.id); }}>
+                  <ThumbsUp className="h-4 w-4 mr-2" />
+                  Mark as Successful
                 </DropdownMenuItem>
                 {!isSharedView && (
                   <>

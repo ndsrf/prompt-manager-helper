@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, MoreVertical, Trash2, Edit, Copy, Folder, Calendar } from 'lucide-react';
+import { Star, MoreVertical, Trash2, Edit, Copy, Folder, Calendar, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -135,6 +135,27 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
     }
   };
 
+  const handleMarkSuccess = async (promptId: string) => {
+    try {
+      await recordUsage.mutateAsync({
+        promptId: promptId,
+        success: true,
+        context: 'marked_successful_from_grid',
+      });
+      toast({
+        title: 'Marked as successful',
+        description: 'This prompt has been marked as successful.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to mark prompt as successful.',
+        variant: 'destructive',
+      });
+      console.error('Failed to mark success:', error);
+    }
+  };
+
   if (error) {
     console.error('[PromptGrid] Error occurred:', error);
     return (
@@ -225,6 +246,10 @@ export function PromptGrid({ folderId, tagIds, search }: PromptGridProps) {
                     <DropdownMenuItem onClick={() => handleCopy(prompt)}>
                       <Copy className="h-4 w-4 mr-2" />
                       Copy Content
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleMarkSuccess(prompt.id)}>
+                      <ThumbsUp className="h-4 w-4 mr-2" />
+                      Mark as Successful
                     </DropdownMenuItem>
                     {!isSharedView && (
                       <>

@@ -125,6 +125,21 @@ async function handleMessage(message: Message): Promise<any> {
       }
       return { success: true }
 
+    case 'MARK_SUCCESS':
+      const { promptId: successPromptId } = message.payload
+      // Track usage as successful
+      try {
+        await apiClient.recordUsage({
+          promptId: successPromptId,
+          success: true,
+          context: 'marked_successful_from_extension',
+        })
+      } catch (error) {
+        console.error('[Background] Failed to mark prompt as successful:', error)
+        throw error
+      }
+      return { success: true }
+
     case 'IMPROVE_PROMPT':
       const { content: promptContent, targetLlm: llm } = message.payload
       const improvement = await apiClient.improvePrompt(promptContent, llm)
