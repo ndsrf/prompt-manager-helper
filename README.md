@@ -199,7 +199,11 @@ npx prisma migrate reset
 ## 🔒 Security Features
 
 - **Password Hashing**: bcrypt with 12 rounds (NIST compliant)
-- **Rate Limiting**: 5 attempts per 15 minutes via Redis
+- **Rate Limiting**: Redis-based rate limiting with graceful degradation
+  - Login attempts: 5 per 15 minutes (per email)
+  - API requests: Tiered limits (20-2000 req/min based on subscription)
+  - Automatic IP and user identification
+  - See [Rate Limiting Documentation](docs/RATE_LIMITING.md) for details
 - **Input Validation**: Zod schemas on all endpoints
 - **SQL Injection Prevention**: Prisma ORM parameterized queries
 - **Session Security**: JWT with httpOnly cookies

@@ -1,5 +1,5 @@
 import type { Message, MessageResponse } from '~/lib/types'
-import { apiClient } from '~/lib/api'
+import { apiClient, RateLimitError } from '~/lib/api'
 import {
   getAuthState,
   setAuthState,
@@ -14,6 +14,24 @@ import { syncThemeFromUserSettings } from '~/lib/theme'
 import { selectorCache } from '~/lib/selector-cache'
 
 console.log('[Background] Service worker started')
+
+/**
+ * Show notification to user about rate limiting
+ */
+function showRateLimitNotification(error: RateLimitError): void {
+  const resetDate = new Date(error.reset * 1000)
+  const minutesUntilReset = Math.ceil((error.reset * 1000 - Date.now()) / 60000)
+
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: chrome.runtime.getURL('icon-128.png'),
+    title: 'PromptEasy Rate Limit',
+    message: `You've reached the API rate limit (${error.limit} requests). Try again in ${minutesUntilReset} minute${minutesUntilReset > 1 ? 's' : ''}.`,
+    priority: 1,
+  })
+
+  console.warn(`[Background] Rate limited: ${error.message}. Reset at ${resetDate.toISOString()}`)
+}
 
 // Handle extension installation
 chrome.runtime.onInstalled.addListener((details) => {
@@ -37,7 +55,19 @@ chrome.runtime.onMessage.addListener(
       })
       .catch((error) => {
         console.error('[Background] Error handling message:', error)
-        sendResponse({ success: false, error: error.message })
+
+        // Handle rate limit errors specially
+        if (error instanceof RateLimitError) {
+          showRateLimitNotification(error)
+          sendResponse({
+            success: false,
+            error: error.message,
+            rateLimited: true,
+            retryAfter: error.retryAfter,
+          })
+        } else {
+          sendResponse({ success: false, error: error.message })
+        }
       })
 
     // Return true to indicate async response
@@ -160,6 +190,7 @@ async function handleMessage(message: Message): Promise<any> {
 
     case 'SYNC_DATA':
       await syncPrompts()
+      await syncCustomInstructions()
       await syncSelectors()
       return { success: true, timestamp: new Date().toISOString() }
 
@@ -182,7 +213,14 @@ async function syncPrompts(): Promise<void> {
     await setCachedPrompts(prompts)
     console.log('[Background] Synced', prompts.length, 'prompts')
   } catch (error) {
-    console.error('[Background] Error syncing prompts:', error)
+    if (error instanceof RateLimitError) {
+      // For background sync, just log the rate limit silently
+      // Don't show notification as it's not user-initiated
+      console.warn('[Background] Rate limited during auto-sync. Will retry later.')
+      console.warn(`[Background] Rate limit resets at ${new Date(error.reset * 1000).toISOString()}`)
+    } else {
+      console.error('[Background] Error syncing prompts:', error)
+    }
   }
 }
 
@@ -200,7 +238,42 @@ async function syncTheme(): Promise<void> {
     await syncThemeFromUserSettings(userSettings)
     console.log('[Background] Theme synced successfully')
   } catch (error) {
-    console.error('[Background] Error syncing theme:', error)
+    if (error instanceof RateLimitError) {
+      console.warn('[Background] Rate limited during theme sync. Will retry later.')
+    } else {
+      console.error('[Background] Error syncing theme:', error)
+    }
+  }
+}
+
+// Sync custom instructions from user profile
+async function syncCustomInstructions(): Promise<void> {
+  try {
+    const authState = await getAuthState()
+    if (!authState.isAuthenticated) {
+      console.log('[Background] Not authenticated, skipping custom instructions sync')
+      return
+    }
+
+    console.log('[Background] Syncing custom instructions...')
+    const userProfile = await apiClient.getUserProfile()
+
+    // Update auth state with latest custom instructions
+    await setAuthState({
+      ...authState,
+      user: {
+        ...authState.user!,
+        customInstructions: userProfile.customInstructions,
+      },
+    })
+
+    console.log('[Background] Custom instructions synced successfully')
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      console.warn('[Background] Rate limited during custom instructions sync. Will retry later.')
+    } else {
+      console.error('[Background] Error syncing custom instructions:', error)
+    }
   }
 }
 
@@ -252,8 +325,9 @@ function filterPrompts(
 setInterval(async () => {
   const shouldSync = await needsSync()
   if (shouldSync) {
-    console.log('[Background] Auto-syncing prompts...')
+    console.log('[Background] Auto-syncing data...')
     await syncPrompts()
+    await syncCustomInstructions()
   }
 }, 60000) // Check every minute
 
@@ -262,6 +336,7 @@ setTimeout(async () => {
   const authState = await getAuthState()
   if (authState.isAuthenticated) {
     await syncPrompts()
+    await syncCustomInstructions()
     await syncTheme()
   }
   // Always sync selectors regardless of auth state

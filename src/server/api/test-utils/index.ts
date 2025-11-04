@@ -25,9 +25,16 @@ export const createMockSession = (overrides?: Partial<Session>): Session => {
 
 // Helper to create a mock context for tRPC procedures
 export const createMockContext = (session?: Session | null) => {
+  const mockHeaders = new Headers();
+  mockHeaders.set('x-forwarded-for', '127.0.0.1');
+
   return {
     session: session ?? createMockSession(),
     prisma: prismaMock,
+    headers: mockHeaders,
+    req: {
+      headers: mockHeaders,
+    } as Request,
   };
 };
 
