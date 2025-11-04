@@ -1,7 +1,7 @@
 {
   "name": "prompteasy-extension",
   "displayName": "PromptEasy - AI Prompt Manager",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Manage and use your AI prompts across ChatGPT, Claude, Gemini and more",
   "author": "PromptEasy",
   "license": "MIT",

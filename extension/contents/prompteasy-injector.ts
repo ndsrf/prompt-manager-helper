@@ -1,6 +1,5 @@
 import type { PlasmoCSConfig } from "plasmo"
 import { detectLLM, insertTextIntoInput, getCurrentInputText, getButtonInsertPoint } from "~/lib/llm-detector"
-import { Book, Sparkles, Save } from "lucide-react"
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -322,7 +321,5 @@ class PromptEasyInjector {
   }
 }
 
-// Initialize
+// Initialize the injector when the content script loads
 new PromptEasyInjector()
-
-export {}

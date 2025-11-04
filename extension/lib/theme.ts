@@ -1,5 +1,5 @@
 import type { Settings } from './types'
-import { getSettings } from './storage'
+import { getSettings, setSettings } from './storage'
 
 export type Theme = 'light' | 'dark' | 'futuristic' | 'system'
 
@@ -64,7 +64,6 @@ export async function syncThemeFromUserSettings(userSettings: Record<string, any
   try {
     if (userSettings && userSettings.theme) {
       const theme = userSettings.theme as Theme
-      const { getSettings, setSettings } = await import('./storage')
       const settings = await getSettings()
 
       if (settings.theme !== theme) {

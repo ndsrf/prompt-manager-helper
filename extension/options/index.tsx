@@ -319,24 +319,24 @@ function OptionsPage() {
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-          <p>PromptEasy Extension v1.0.0</p>
+          <p>PromptEasy Extension v1.1.0</p>
           <p className="mt-1">
             <a
-              href="https://github.com/yourusername/prompteasy"
+              href="https://prompteasy.ndsrf.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-indigo-600 hover:text-indigo-700"
             >
-              Documentation
+              Website
             </a>
             {" · "}
             <a
-              href="https://github.com/yourusername/prompteasy/issues"
+              href="https://prompteasy.ndsrf.com/privacy"
               target="_blank"
               rel="noopener noreferrer"
               className="text-indigo-600 hover:text-indigo-700"
             >
-              Report Issue
+              Privacy Policy
             </a>
           </p>
         </div>

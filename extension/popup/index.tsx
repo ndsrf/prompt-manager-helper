@@ -84,6 +84,19 @@ function IndexPopup() {
     try {
       console.log('[Popup] Prompt clicked:', prompt.title)
 
+      // Track usage FIRST before attempting insertion
+      // This ensures usage is recorded even if insertion fails
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'INSERT_PROMPT',
+          payload: { promptId: prompt.id }
+        })
+        console.log('[Popup] Usage tracked for prompt:', prompt.id)
+      } catch (usageError) {
+        console.error('[Popup] Failed to track usage (continuing anyway):', usageError)
+        // Don't fail the operation if usage tracking fails
+      }
+
       // Get active tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
       console.log('[Popup] Active tab:', tab.url, 'Tab ID:', tab.id)
@@ -100,12 +113,6 @@ function IndexPopup() {
         payload: { prompt }
       })
       console.log('[Popup] Response from content script:', response)
-
-      // Increment usage
-      await chrome.runtime.sendMessage({
-        type: 'INSERT_PROMPT',
-        payload: { promptId: prompt.id }
-      })
 
       // Close popup
       window.close()
