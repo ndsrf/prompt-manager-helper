@@ -92,17 +92,19 @@ This document describes the implementation of the new privacy level system with 
   // 'public': Visible to everyone including unregistered users in the gallery
   ```
 
-### Migration Script
+### Automatic Migration
 
-**scripts/migrate-privacy-levels.ts**
+**src/instrumentation.ts**
+- Automatic migration that runs on application startup
 - Migrates existing 'public' prompts to 'registered'
 - Includes verification step
 - Safe to run multiple times (idempotent)
+- Uses Next.js instrumentation hook
 
-**Usage:**
-```bash
-npx tsx scripts/migrate-privacy-levels.ts
-```
+**next.config.mjs**
+- Enabled `instrumentationHook: true` in experimental features
+
+The migration runs automatically when the server starts - no manual action required.
 
 ### Testing
 
@@ -151,24 +153,21 @@ Added comprehensive tests covering:
 ### For Development/Staging
 
 1. Pull latest code
-2. Run migration script:
-   ```bash
-   npx tsx scripts/migrate-privacy-levels.ts
-   ```
-3. Verify prompts migrated correctly
-4. Test gallery functionality
+2. Start the application - migration runs automatically on startup
+3. Check logs for `[Privacy Migration]` messages
+4. Verify prompts migrated correctly
+5. Test gallery functionality
 
 ### For Production
 
 1. **Backup database** (CRITICAL!)
-2. Run migration script:
-   ```bash
-   npx tsx scripts/migrate-privacy-levels.ts
-   ```
-3. Verify output shows successful migration
-4. Deploy new code
+2. Deploy new code
+3. Migration runs automatically on first server startup
+4. Check logs for `[Privacy Migration]` messages to verify success
 5. Test gallery access as both authenticated and unauthenticated user
 6. Monitor error logs for any issues
+
+**Note**: The migration is idempotent and runs automatically on every server startup, but only migrates prompts if needed.
 
 ## User-Facing Changes
 
@@ -240,9 +239,10 @@ Potential improvements for future iterations:
 ### Database
 - prisma/schema.prisma
 
-### Scripts & Docs
-- scripts/migrate-privacy-levels.ts
-- scripts/README.md
+### Migration & Config
+- src/instrumentation.ts (automatic migration on startup)
+- next.config.mjs (enable instrumentation hook)
+- scripts/README.md (migration documentation)
 
 ### Tests
 - tests/e2e/gallery.spec.ts

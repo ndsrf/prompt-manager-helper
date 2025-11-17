@@ -39,8 +39,10 @@ Public → Everyone including unregistered users (NEW)
 
 ### Database & Migration
 - Updated Prisma schema documentation for privacy field
-- Created migration script to rename existing 'public' → 'registered'
+- Created automatic migration in `src/instrumentation.ts` that runs on server startup
+- Migration renames existing 'public' → 'registered'
 - Migration is safe, idempotent, and includes verification
+- Enabled Next.js instrumentation hook in `next.config.mjs`
 
 ### Testing
 - Added comprehensive e2e tests (`tests/e2e/gallery.spec.ts`)
@@ -63,9 +65,12 @@ Public → Everyone including unregistered users (NEW)
 - `src/components/editor/MetadataPanel.tsx` - 4-level privacy dropdown
 - `src/components/sharing/ShareDialog.tsx` - Privacy controls & labels
 
-### Scripts & Documentation (6 files)
-- `scripts/migrate-privacy-levels.ts` - Data migration script
+### Migration & Configuration (3 files)
+- `src/instrumentation.ts` - Automatic privacy migration on startup
+- `next.config.mjs` - Enable instrumentation hook
 - `scripts/README.md` - Migration documentation
+
+### Documentation & Testing (4 files)
 - `PRIVACY_LEVELS_IMPLEMENTATION.md` - Complete implementation guide
 - `MANUAL_TESTING_CHECKLIST.md` - Testing procedures
 - `SECURITY_ASSESSMENT.md` - Security analysis
@@ -80,17 +85,16 @@ Public → Everyone including unregistered users (NEW)
 
 ### Steps
 
-1. **Run Migration** (Before deploying code)
-   ```bash
-   npx tsx scripts/migrate-privacy-levels.ts
-   ```
-   Expected output: "Successfully migrated X prompts from 'public' to 'registered'"
-
-2. **Deploy Code**
+1. **Deploy Code**
    - Deploy updated application code
-   - No additional configuration needed
+   - Migration runs automatically on server startup
 
-3. **Verify**
+2. **Verify Migration**
+   - Check server logs for `[Privacy Migration]` messages
+   - Expected output: "Successfully migrated X prompts from 'public' to 'registered'"
+   - Or: "No prompts to migrate. Skipping."
+
+3. **Test**
    - Test unauthenticated access to `/gallery`
    - Verify public prompts visible to everyone
    - Verify registered prompts visible only to logged-in users
