@@ -46,12 +46,17 @@ export async function register() {
 }
 ```
 
-### Flag File
+### Migration Tracking
 
-After successful migration, a file `.privacy-migration-completed` is created in the project root containing the migration timestamp. This file:
+After successful migration, a record is created in the `schema_migrations` database table:
+- Version: `privacy-levels-v1`
+- Description: Migrate privacy levels: rename public to registered for existing prompts
+- Applied timestamp
+
+This database record:
 - Prevents the migration from running again
-- Is ignored by Git (in `.gitignore`)
-- Can be manually deleted to force re-run if needed
+- Persists across deployments
+- Can be manually deleted from the database to force re-run if needed
 
 ### Console Output
 
@@ -115,9 +120,18 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Update the prompts
 await prisma.prompt.updateMany({
   where: { privacy: 'public' },
   data: { privacy: 'registered' },
+});
+
+// Mark migration as complete
+await prisma.schemaMigration.create({
+  data: {
+    version: 'privacy-levels-v1',
+    description: 'Migrate privacy levels: rename public to registered for existing prompts',
+  },
 });
 
 await prisma.$disconnect();
@@ -125,7 +139,20 @@ await prisma.$disconnect();
 
 Or via SQL:
 ```sql
+-- Update the prompts
 UPDATE prompts SET privacy = 'registered' WHERE privacy = 'public';
+
+-- Mark migration as complete
+INSERT INTO schema_migrations (id, version, description, applied_at)
+VALUES (gen_random_uuid(), 'privacy-levels-v1', 'Migrate privacy levels: rename public to registered for existing prompts', NOW());
+```
+
+### Force Re-run Migration
+
+To force the migration to run again:
+
+```sql
+DELETE FROM schema_migrations WHERE version = 'privacy-levels-v1';
 ```
 
 ## Rollback
@@ -133,7 +160,11 @@ UPDATE prompts SET privacy = 'registered' WHERE privacy = 'public';
 If you need to rollback (revert to old naming):
 
 ```sql
+-- Revert the prompts
 UPDATE prompts SET privacy = 'public' WHERE privacy = 'registered';
+
+-- Remove migration record
+DELETE FROM schema_migrations WHERE version = 'privacy-levels-v1';
 ```
 
 **Note**: This will restore the old privacy naming, but the new code expects the new naming convention. Only rollback if you're also reverting the code changes.

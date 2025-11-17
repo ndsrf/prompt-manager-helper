@@ -38,6 +38,3 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
-
-# privacy migration flag
-.privacy-migration-completed

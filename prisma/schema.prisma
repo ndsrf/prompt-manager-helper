@@ -407,3 +407,13 @@ model ExtensionToken {
   @@index([token])
   @@map("extension_tokens")
 }
+
+// Schema migrations tracker
+model SchemaMigration {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  version     String   @unique @db.VarChar(100) // Migration version identifier
+  description String?  @db.Text // Description of what the migration does
+  appliedAt   DateTime @default(now()) @map("applied_at") @db.Timestamp(6)
+
+  @@map("schema_migrations")
+}
