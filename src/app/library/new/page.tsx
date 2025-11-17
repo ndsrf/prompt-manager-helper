@@ -29,7 +29,7 @@ const promptSchema = z.object({
   targetLlm: z.string().optional(),
   folderId: z.string().uuid().optional().nullable(),
   tagIds: z.array(z.string().uuid()).default([]),
-  privacy: z.enum(['private', 'shared', 'public']).default('private'),
+  privacy: z.enum(['private', 'shared', 'registered', 'public']).default('private'),
   isFavorite: z.boolean().default(false),
 });
 

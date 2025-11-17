@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { Prisma } from '@prisma/client';
 
@@ -18,7 +18,7 @@ export const promptRouter = createTRPCRouter({
       tagIds: z.array(z.string().uuid()).optional(),
       search: z.string().optional(),
       favorites: z.boolean().optional(),
-      privacy: z.enum(['private', 'shared', 'public']).optional(),
+      privacy: z.enum(['private', 'shared', 'registered', 'public']).optional(),
       sortBy: z.enum(['name', 'createdAt', 'updatedAt', 'usageCount']).default('updatedAt'),
       sortOrder: z.enum(['asc', 'desc']).default('desc'),
       limit: z.number().min(1).max(100).default(50),
@@ -139,7 +139,7 @@ export const promptRouter = createTRPCRouter({
           id: input.id,
           OR: [
             { userId: ctx.session.user.id },
-            { privacy: 'public' },
+            { privacy: { in: ['registered', 'public'] } },
           ],
           isDeleted: false,
         },
@@ -186,7 +186,7 @@ export const promptRouter = createTRPCRouter({
       targetLlm: z.string().max(50).optional(),
       folderId: z.string().uuid().optional().nullable(),
       tagIds: z.array(z.string().uuid()).default([]),
-      privacy: z.enum(['private', 'shared', 'public']).default('private'),
+      privacy: z.enum(['private', 'shared', 'registered', 'public']).default('private'),
       isFavorite: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -296,7 +296,7 @@ export const promptRouter = createTRPCRouter({
       targetLlm: z.string().max(50).optional().nullable(),
       folderId: z.string().uuid().optional().nullable(),
       tagIds: z.array(z.string().uuid()).optional(),
-      privacy: z.enum(['private', 'shared', 'public']).optional(),
+      privacy: z.enum(['private', 'shared', 'registered', 'public']).optional(),
       isFavorite: z.boolean().optional(),
       applyCustomInstructions: z.boolean().optional(),
     }))
@@ -900,7 +900,7 @@ export const promptRouter = createTRPCRouter({
     }),
 
   // Get public prompts for the gallery
-  getPublic: protectedProcedure
+  getPublic: publicProcedure
     .input(z.object({
       search: z.string().optional(),
       tagIds: z.array(z.string().uuid()).optional(),
@@ -911,8 +911,16 @@ export const promptRouter = createTRPCRouter({
       cursor: z.string().uuid().optional(),
     }))
     .query(async ({ ctx, input }) => {
+      // Determine which prompts to show based on authentication
+      // - Unauthenticated users: only 'public' prompts
+      // - Authenticated users: both 'public' and 'registered' prompts
+      const isAuthenticated = !!ctx.session?.user;
+      const privacyFilter = isAuthenticated 
+        ? { privacy: { in: ['public', 'registered'] } }
+        : { privacy: 'public' };
+
       const where: Prisma.PromptWhereInput = {
-        privacy: 'public',
+        ...privacyFilter,
         isDeleted: false,
       };
 

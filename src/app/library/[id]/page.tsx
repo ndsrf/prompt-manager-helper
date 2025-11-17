@@ -173,7 +173,7 @@ export default function PromptViewPage({ params }: PromptViewPageProps) {
             <ShareDialog
               promptId={id}
               promptTitle={prompt.title}
-              currentPrivacy={prompt.privacy as "private" | "shared" | "public"}
+              currentPrivacy={prompt.privacy as "private" | "shared" | "registered" | "public"}
             />
             <Button variant="outline" size="sm" onClick={handleEdit}>
               <Edit className="h-4 w-4" />

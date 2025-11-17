@@ -541,6 +541,46 @@ export const shareRouter = createTRPCRouter({
       return updated;
     }),
 
+  // Make a prompt visible to registered users only
+  makeRegistered: protectedProcedure
+    .input(z.object({ promptId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const prompt = await ctx.prisma.prompt.findUnique({
+        where: { id: input.promptId },
+      });
+
+      if (!prompt) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Prompt not found",
+        });
+      }
+
+      if (prompt.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to change this prompt's privacy",
+        });
+      }
+
+      const updated = await ctx.prisma.prompt.update({
+        where: { id: input.promptId },
+        data: { privacy: "registered" },
+      });
+
+      // Log activity
+      await ctx.prisma.activityLog.create({
+        data: {
+          userId: ctx.session.user.id,
+          action: "made_registered",
+          entityType: "prompt",
+          entityId: input.promptId,
+        },
+      });
+
+      return updated;
+    }),
+
   // Make a prompt private
   makePrivate: protectedProcedure
     .input(z.object({ promptId: z.string() }))
