@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/client";
@@ -35,10 +35,13 @@ import { toast } from "@/hooks/use-toast";
 
 export function PublicGalleryClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [targetLlm, setTargetLlm] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "usageCount">("updatedAt");
+  const highlightId = searchParams.get('highlight');
+  const promptRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   
   const isAuthenticated = !!session;
 
@@ -60,6 +63,23 @@ export function PublicGalleryClient() {
   const prompts = data?.pages.flatMap((page) => page.items) ?? [];
 
   const recordUsage = trpc.analytics.recordUsage.useMutation();
+
+  // Scroll to highlighted prompt when data loads
+  useEffect(() => {
+    if (highlightId && prompts.length > 0 && promptRefs.current[highlightId]) {
+      const element = promptRefs.current[highlightId];
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Show a toast to indicate this is the shared prompt
+          toast({
+            title: "Shared prompt",
+            description: "You've been directed to a shared public prompt",
+          });
+        }, 500);
+      }
+    }
+  }, [highlightId, prompts]);
 
   const handleCopyPrompt = async (promptId: string, content: string, title: string) => {
     await navigator.clipboard.writeText(content);
@@ -236,8 +256,16 @@ export function PublicGalleryClient() {
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {prompts.map((prompt) => (
-                <Card key={prompt.id} className="group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10">
+              {prompts.map((prompt) => {
+                const isHighlighted = highlightId === prompt.id;
+                return (
+                  <Card 
+                    key={prompt.id} 
+                    ref={(el) => { promptRefs.current[prompt.id] = el; }}
+                    className={`group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10 ${
+                      isHighlighted ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-slate-950 bg-white/15' : ''
+                    }`}
+                  >
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-lg line-clamp-2 flex-1 text-white">
@@ -338,7 +366,8 @@ export function PublicGalleryClient() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
             </div>
 
             {/* Load More */}

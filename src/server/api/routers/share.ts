@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
 export const shareRouter = createTRPCRouter({
@@ -498,6 +498,45 @@ export const shareRouter = createTRPCRouter({
         permission: share.permission,
         sharedAt: share.createdAt,
         expiresAt: share.expiresAt,
+      };
+    }),
+
+  // Check share token info (public - for unauthenticated access)
+  checkShareToken: publicProcedure
+    .input(z.object({ shareToken: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const share = await ctx.prisma.promptShare.findUnique({
+        where: { shareToken: input.shareToken },
+        include: {
+          prompt: {
+            select: {
+              id: true,
+              privacy: true,
+              isDeleted: true,
+            },
+          },
+        },
+      });
+
+      if (!share) {
+        return {
+          found: false,
+          isPublic: false,
+          promptId: null,
+          isExpired: false,
+          isDeleted: false,
+        };
+      }
+
+      // Check if expired
+      const isExpired = share.expiresAt ? share.expiresAt < new Date() : false;
+      
+      return {
+        found: true,
+        isPublic: share.prompt.privacy === 'public',
+        promptId: share.prompt.id,
+        isExpired,
+        isDeleted: share.prompt.isDeleted,
       };
     }),
 
