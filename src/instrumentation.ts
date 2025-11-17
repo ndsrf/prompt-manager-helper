@@ -6,6 +6,10 @@
 
 import { PrismaClient } from '@prisma/client';
 
+const MIGRATION_FLAG_FILE = '.privacy-migration-completed';
+const fs = require('fs');
+const path = require('path');
+
 export async function register() {
   // Only run on server side
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -14,18 +18,27 @@ export async function register() {
 }
 
 /**
- * Automatically migrate privacy levels from old to new naming:
+ * Automatically migrate privacy levels from old to new naming - RUNS ONLY ONCE:
  * - Old 'public' -> New 'registered' (visible to all registered users)
  * - Keep 'private' and 'shared' as is
  * - New 'public' level (visible to everyone including unregistered users) will be set manually by users
  * 
- * This migration runs automatically on server startup and is idempotent.
+ * This migration runs automatically on server startup but only executes once.
+ * A flag file is created after successful migration to prevent re-running.
  */
 async function migratePrivacyLevels() {
+  const flagPath = path.join(process.cwd(), MIGRATION_FLAG_FILE);
+  
+  // Check if migration has already been completed
+  if (fs.existsSync(flagPath)) {
+    console.log('[Privacy Migration] Migration already completed. Skipping.');
+    return;
+  }
+  
   const prisma = new PrismaClient();
   
   try {
-    console.log('[Privacy Migration] Checking for prompts to migrate...');
+    console.log('[Privacy Migration] Starting one-time migration...');
     
     // Find all prompts with privacy='public' (old meaning: registered users only)
     const publicPromptsCount = await prisma.prompt.count({
@@ -35,39 +48,42 @@ async function migratePrivacyLevels() {
     });
 
     if (publicPromptsCount === 0) {
-      console.log('[Privacy Migration] No prompts to migrate. Skipping.');
-      return;
+      console.log('[Privacy Migration] No prompts to migrate.');
+    } else {
+      console.log(`[Privacy Migration] Found ${publicPromptsCount} prompts with privacy='public' to migrate`);
+
+      // Update all 'public' prompts to 'registered'
+      const result = await prisma.prompt.updateMany({
+        where: {
+          privacy: 'public',
+        },
+        data: {
+          privacy: 'registered',
+        },
+      });
+
+      console.log(`[Privacy Migration] Successfully migrated ${result.count} prompts from 'public' to 'registered'`);
+      
+      // Verify the migration
+      const verifyRegistered = await prisma.prompt.count({
+        where: { privacy: 'registered' },
+      });
+      
+      const verifyPublic = await prisma.prompt.count({
+        where: { privacy: 'public' },
+      });
+
+      console.log(`[Privacy Migration] Verification: ${verifyRegistered} registered, ${verifyPublic} public`);
     }
-
-    console.log(`[Privacy Migration] Found ${publicPromptsCount} prompts with privacy='public' to migrate`);
-
-    // Update all 'public' prompts to 'registered'
-    const result = await prisma.prompt.updateMany({
-      where: {
-        privacy: 'public',
-      },
-      data: {
-        privacy: 'registered',
-      },
-    });
-
-    console.log(`[Privacy Migration] Successfully migrated ${result.count} prompts from 'public' to 'registered'`);
     
-    // Verify the migration
-    const verifyRegistered = await prisma.prompt.count({
-      where: { privacy: 'registered' },
-    });
+    // Create flag file to mark migration as complete
+    fs.writeFileSync(flagPath, new Date().toISOString());
+    console.log('[Privacy Migration] Migration completed successfully! Will not run again.');
     
-    const verifyPublic = await prisma.prompt.count({
-      where: { privacy: 'public' },
-    });
-
-    console.log(`[Privacy Migration] Verification: ${verifyRegistered} registered, ${verifyPublic} public`);
-    console.log('[Privacy Migration] Migration completed successfully!');
   } catch (error) {
     console.error('[Privacy Migration] Error during migration:', error);
-    // Don't throw - let the app continue to start even if migration fails
-    // The migration is idempotent and will be retried on next startup
+    console.error('[Privacy Migration] Migration will be retried on next startup.');
+    // Don't create flag file on error - allow retry on next startup
   } finally {
     await prisma.$disconnect();
   }

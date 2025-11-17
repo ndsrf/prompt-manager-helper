@@ -18,16 +18,22 @@ This directory contains documentation about the automatic privacy level migratio
 
 ## Automatic Migration
 
-**The migration runs automatically when the application starts.**
+**The migration runs automatically ONCE when the application first starts.**
 
 The migration logic is implemented in `src/instrumentation.ts`, which uses Next.js's instrumentation hook to run code on server startup.
 
-### What Happens on Startup
+### What Happens on First Startup
 
-1. The application checks for prompts with `privacy='public'`
-2. If found, all such prompts are updated to `privacy='registered'`
-3. Migration is logged to the console
-4. Migration is idempotent - safe to run multiple times
+1. The application checks if migration has already been completed (via `.privacy-migration-completed` flag file)
+2. If not completed, it finds all prompts with `privacy='public'` (old meaning)
+3. Updates all such prompts to `privacy='registered'`
+4. Creates a flag file to mark migration as complete
+5. Migration is logged to the console
+
+**On subsequent startups:**
+- The flag file exists, so migration is skipped entirely
+- Console logs: "Migration already completed. Skipping."
+- New prompts with `privacy='public'` (new meaning) are NOT migrated
 
 ### Migration Code
 
@@ -40,21 +46,34 @@ export async function register() {
 }
 ```
 
+### Flag File
+
+After successful migration, a file `.privacy-migration-completed` is created in the project root containing the migration timestamp. This file:
+- Prevents the migration from running again
+- Is ignored by Git (in `.gitignore`)
+- Can be manually deleted to force re-run if needed
+
 ### Console Output
 
-On startup, you'll see:
+**First startup (migration runs):**
 ```
-[Privacy Migration] Checking for prompts to migrate...
+[Privacy Migration] Starting one-time migration...
 [Privacy Migration] Found X prompts with privacy='public' to migrate
 [Privacy Migration] Successfully migrated X prompts from 'public' to 'registered'
 [Privacy Migration] Verification: X registered, 0 public
-[Privacy Migration] Migration completed successfully!
+[Privacy Migration] Migration completed successfully! Will not run again.
 ```
 
-Or if no migration is needed:
+Or if no prompts need migration:
 ```
-[Privacy Migration] Checking for prompts to migrate...
-[Privacy Migration] No prompts to migrate. Skipping.
+[Privacy Migration] Starting one-time migration...
+[Privacy Migration] No prompts to migrate.
+[Privacy Migration] Migration completed successfully! Will not run again.
+```
+
+**Subsequent startups:**
+```
+[Privacy Migration] Migration already completed. Skipping.
 ```
 
 ## Post-Migration
