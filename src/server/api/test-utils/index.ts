@@ -34,7 +34,7 @@ export const createMockContext = (session?: Session | null) => {
     headers: mockHeaders,
     req: {
       headers: mockHeaders,
-    } as Request,
+    } as any,
   };
 };
 

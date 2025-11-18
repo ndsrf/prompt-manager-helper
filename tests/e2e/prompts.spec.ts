@@ -180,7 +180,7 @@ test.describe('Prompt Management', () => {
       await deleteButton.click();
 
       // Confirm deletion (if there's a confirmation dialog)
-      authenticatedPage.on('dialog', (dialog) => dialog.accept());
+      authenticatedPage.on('dialog', (dialog: any) => dialog.accept());
 
       // Wait for prompt to be removed
       await authenticatedPage.waitForTimeout(1000);

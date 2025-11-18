@@ -1,8 +1,42 @@
 import { Page } from '@playwright/test';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
 
 /**
  * Helper functions to create test data
  */
+
+export async function setupTest(request: any) {
+  // Create a test user
+  const timestamp = Date.now();
+  const email = `test-${timestamp}@example.com`;
+  const password = 'testpassword123';
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name: `Test User ${timestamp}`,
+      passwordHash: hashedPassword,
+      emailVerified: true,
+    },
+  });
+
+  const cleanup = async () => {
+    // Delete user and associated data
+    await prisma.prompt.deleteMany({ where: { userId: user.id } });
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  };
+
+  return { user, cleanup };
+}
+
+export async function cleanupTest(userId: string) {
+  await prisma.prompt.deleteMany({ where: { userId } });
+  await prisma.user.delete({ where: { id: userId } }).catch(() => {});
+}
 
 export async function createTestPrompt(
   page: Page,

@@ -48,7 +48,7 @@ export const test = base.extend<AuthFixtures>({
     await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
   },
 
-  authenticatedPage: async ({ page, testUser }, use) => {
+  authenticatedPage: async ({ page, testUser }: any, use: any) => {
     // Navigate to login page
     await page.goto('/auth/login');
 

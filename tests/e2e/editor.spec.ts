@@ -225,7 +225,7 @@ test.describe('Prompt Editor', () => {
       await restoreButton.click();
 
       // Confirm restore
-      authenticatedPage.on('dialog', (dialog) => dialog.accept());
+      authenticatedPage.on('dialog', (dialog: any) => dialog.accept());
 
       await authenticatedPage.waitForTimeout(1000);
 
