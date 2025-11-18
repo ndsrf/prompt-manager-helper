@@ -28,10 +28,26 @@ async function migratePrivacyLevels() {
   const prisma = new PrismaClient();
   
   try {
+    // Ensure schema_migrations table exists
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        version VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        applied_at TIMESTAMP(6) DEFAULT NOW()
+      )
+    `);
+    
     // Check if migration has already been completed
-    const existingMigration = await prisma.schemaMigration.findUnique({
-      where: { version: MIGRATION_VERSION },
-    });
+    let existingMigration;
+    try {
+      existingMigration = await prisma.schemaMigration.findUnique({
+        where: { version: MIGRATION_VERSION },
+      });
+    } catch (error) {
+      // Table might not exist yet, continue with migration
+      existingMigration = null;
+    }
 
     if (existingMigration) {
       console.log('[Privacy Migration] Migration already completed. Skipping.');
