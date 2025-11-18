@@ -18,9 +18,9 @@ export default function SharedPromptPage({ params }: PageProps) {
   const { token } = params;
 
   // Check share token info (works for unauthenticated users)
-  const { data: shareInfo, isLoading: isCheckingShare } = trpc.share.checkShareToken.useQuery(
-    { shareToken: token },
-    { enabled: status !== 'loading' }
+  // Always enable this query since it's a public endpoint
+  const { data: shareInfo, isLoading: isCheckingShare, error: shareError } = trpc.share.checkShareToken.useQuery(
+    { shareToken: token }
   );
 
   useEffect(() => {
