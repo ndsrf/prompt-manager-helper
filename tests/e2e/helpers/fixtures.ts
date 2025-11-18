@@ -5,10 +5,10 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 /**
- * Helper functions to create test data
+ * Helper functions to create test data and manage test users
  */
 
-export async function setupTest(request: any) {
+export async function setupTest(request?: any) {
   // Create a test user
   const timestamp = Date.now();
   const email = `test-${timestamp}@example.com`;
@@ -21,6 +21,9 @@ export async function setupTest(request: any) {
       name: `Test User ${timestamp}`,
       passwordHash: hashedPassword,
       emailVerified: true,
+      provider: 'email',
+      subscriptionTier: 'free',
+      subscriptionStatus: 'active',
     },
   });
 
