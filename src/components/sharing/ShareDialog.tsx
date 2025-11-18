@@ -42,7 +42,7 @@ import {
 interface ShareDialogProps {
   promptId: string;
   promptTitle: string;
-  currentPrivacy: "private" | "shared" | "public";
+  currentPrivacy: "private" | "shared" | "registered" | "public";
   trigger?: React.ReactNode;
 }
 
@@ -149,7 +149,17 @@ export function ShareDialog({
     onSuccess: () => {
       toast({
         title: "Prompt is now public",
-        description: "Anyone can view this prompt in the public gallery",
+        description: "Anyone (including unregistered users) can view this prompt in the public gallery",
+      });
+      void utils.prompt.getById.invalidate({ id: promptId });
+    },
+  });
+
+  const makeRegistered = trpc.share.makeRegistered.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Prompt visible to registered users",
+        description: "Any registered user can view this prompt in the gallery",
       });
       void utils.prompt.getById.invalidate({ id: promptId });
     },
@@ -221,6 +231,8 @@ export function ShareDialog({
     switch (currentPrivacy) {
       case "public":
         return <Globe className="h-4 w-4" />;
+      case "registered":
+        return <Users className="h-4 w-4" />;
       case "shared":
         return <Users className="h-4 w-4" />;
       case "private":
@@ -250,9 +262,11 @@ export function ShareDialog({
           {getPrivacyIcon()}
           <div className="flex-1">
             <p className="text-sm font-medium">Current privacy</p>
-            <p className="text-xs text-muted-foreground capitalize">{currentPrivacy}</p>
+            <p className="text-xs text-muted-foreground">
+              {currentPrivacy === "registered" ? "Registered Users" : currentPrivacy.charAt(0).toUpperCase() + currentPrivacy.slice(1)}
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {currentPrivacy !== "public" && (
               <Button
                 variant="outline"
@@ -261,7 +275,18 @@ export function ShareDialog({
                 disabled={makePublic.isPending}
               >
                 <Globe className="mr-2 h-4 w-4" />
-                Make Public
+                Public
+              </Button>
+            )}
+            {currentPrivacy !== "registered" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => makeRegistered.mutate({ promptId })}
+                disabled={makeRegistered.isPending}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Registered
               </Button>
             )}
             {currentPrivacy !== "private" && (
@@ -272,7 +297,7 @@ export function ShareDialog({
                 disabled={makePrivate.isPending}
               >
                 <Lock className="mr-2 h-4 w-4" />
-                Make Private
+                Private
               </Button>
             )}
           </div>

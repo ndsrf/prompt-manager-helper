@@ -69,6 +69,7 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
   const privacyIcons = {
     private: <Lock className="h-4 w-4" />,
     shared: <Users className="h-4 w-4" />,
+    registered: <Users className="h-4 w-4" />,
     public: <Globe className="h-4 w-4" />,
   };
 
@@ -188,6 +189,12 @@ export function MetadataPanel({ prompt }: MetadataPanelProps) {
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Shared
+                </div>
+              </SelectItem>
+              <SelectItem value="registered">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Registered Users
                 </div>
               </SelectItem>
               <SelectItem value="public">

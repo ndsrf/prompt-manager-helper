@@ -35,11 +35,12 @@ export const commentRouter = createTRPCRouter({
         });
       }
 
-      // User must own the prompt, have it shared with them, or it must be public
+      // User must own the prompt, have it shared with them, or it must be public/registered
       const hasAccess =
         prompt.userId === ctx.session.user.id ||
         prompt.shares.length > 0 ||
-        prompt.privacy === "public";
+        prompt.privacy === "public" ||
+        prompt.privacy === "registered";
 
       if (!hasAccess) {
         throw new TRPCError({
@@ -126,11 +127,12 @@ export const commentRouter = createTRPCRouter({
         });
       }
 
-      // User must own the prompt, have it shared with them, or it must be public
+      // User must own the prompt, have it shared with them, or it must be public/registered
       const hasAccess =
         prompt.userId === ctx.session.user.id ||
         prompt.shares.length > 0 ||
-        prompt.privacy === "public";
+        prompt.privacy === "public" ||
+        prompt.privacy === "registered";
 
       if (!hasAccess) {
         throw new TRPCError({

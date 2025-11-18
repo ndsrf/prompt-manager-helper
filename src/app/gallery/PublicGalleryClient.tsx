@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,15 +28,22 @@ import {
   Copy,
   Home,
   Sparkles,
+  LogIn,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 
 export function PublicGalleryClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [targetLlm, setTargetLlm] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "usageCount">("updatedAt");
+  const highlightId = searchParams.get('highlight');
+  const promptRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  
+  const isAuthenticated = !!session;
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
   // @ts-ignore - Type inference issue with tRPC infinite query
@@ -57,6 +64,23 @@ export function PublicGalleryClient() {
 
   const recordUsage = trpc.analytics.recordUsage.useMutation();
 
+  // Scroll to highlighted prompt when data loads
+  useEffect(() => {
+    if (highlightId && prompts.length > 0 && promptRefs.current[highlightId]) {
+      const element = promptRefs.current[highlightId];
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Show a toast to indicate this is the shared prompt
+          toast({
+            title: "Shared prompt",
+            description: "You've been directed to a shared public prompt",
+          });
+        }, 500);
+      }
+    }
+  }, [highlightId, prompts]);
+
   const handleCopyPrompt = async (promptId: string, content: string, title: string) => {
     await navigator.clipboard.writeText(content);
     toast({
@@ -64,15 +88,29 @@ export function PublicGalleryClient() {
       description: `"${title}" has been copied`,
     });
 
-    // Track usage when copying
-    try {
-      await recordUsage.mutateAsync({
-        promptId,
-        context: 'copied_from_gallery',
+    // Track usage when copying (only if authenticated)
+    if (isAuthenticated) {
+      try {
+        await recordUsage.mutateAsync({
+          promptId,
+          context: 'copied_from_gallery',
+        });
+      } catch (error) {
+        // Silently fail - don't disrupt the copy action
+        console.error('Failed to record usage:', error);
+      }
+    }
+  };
+
+  const handleViewPrompt = (promptId: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please log in to view full prompt details",
       });
-    } catch (error) {
-      // Silently fail - don't disrupt the copy action
-      console.error('Failed to record usage:', error);
+      router.push(`/auth/login?callbackUrl=/editor/${promptId}`);
+    } else {
+      router.push(`/editor/${promptId}`);
     }
   };
 
@@ -86,15 +124,17 @@ export function PublicGalleryClient() {
         {/* Header */}
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push('/dashboard')}
-              title="Back to Dashboard"
-              className="hover:bg-white/10 text-white"
-            >
-              <Home className="h-5 w-5" />
-            </Button>
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/dashboard')}
+                title="Back to Dashboard"
+                className="hover:bg-white/10 text-white"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
+            )}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600">
@@ -108,6 +148,15 @@ export function PublicGalleryClient() {
                 Discover and use prompts shared by the community
               </p>
             </div>
+            {!isAuthenticated && (
+              <Button
+                onClick={() => router.push('/auth/login')}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Button>
+            )}
           </div>
         </div>
 
@@ -207,8 +256,16 @@ export function PublicGalleryClient() {
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {prompts.map((prompt) => (
-                <Card key={prompt.id} className="group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10">
+              {prompts.map((prompt) => {
+                const isHighlighted = highlightId === prompt.id;
+                return (
+                  <Card 
+                    key={prompt.id} 
+                    ref={(el) => { promptRefs.current[prompt.id] = el; }}
+                    className={`group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10 ${
+                      isHighlighted ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-slate-950 bg-white/15' : ''
+                    }`}
+                  >
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-lg line-clamp-2 flex-1 text-white">
@@ -291,12 +348,14 @@ export function PublicGalleryClient() {
 
                     {/* Actions */}
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link href={`/editor/${prompt.id}`} className="flex-1">
-                        <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0" size="sm">
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          View
-                        </Button>
-                      </Link>
+                      <Button 
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0" 
+                        size="sm"
+                        onClick={() => handleViewPrompt(prompt.id)}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View
+                      </Button>
                       <Button
                         size="sm"
                         className="bg-white/5 hover:bg-white/10 text-white border-white/10"
@@ -307,7 +366,8 @@ export function PublicGalleryClient() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
             </div>
 
             {/* Load More */}

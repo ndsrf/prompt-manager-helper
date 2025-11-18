@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { SharedPromptView } from "./SharedPromptView";
 import { useEffect } from 'react';
+import { trpc } from '@/lib/trpc/client';
 
 interface PageProps {
   params: {
@@ -14,14 +15,34 @@ interface PageProps {
 export default function SharedPromptPage({ params }: PageProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { token } = params;
+
+  // Check share token info (works for unauthenticated users)
+  // Always enable this query since it's a public endpoint
+  const { data: shareInfo, isLoading: isCheckingShare, error: shareError } = trpc.share.checkShareToken.useQuery(
+    { shareToken: token }
+  );
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/login');
+    // If still loading session or share info, don't redirect yet
+    if (status === 'loading' || isCheckingShare) {
+      return;
     }
-  }, [status, router]);
 
-  if (status === 'loading') {
+    // If user is unauthenticated
+    if (status === 'unauthenticated') {
+      // If share token is valid and prompt is public, redirect to gallery
+      if (shareInfo?.found && shareInfo.isPublic && !shareInfo.isExpired && !shareInfo.isDeleted && shareInfo.promptId) {
+        router.push(`/gallery?highlight=${shareInfo.promptId}`);
+        return;
+      }
+      
+      // Otherwise, require login
+      router.push(`/auth/login?callbackUrl=/shared/${token}`);
+    }
+  }, [status, shareInfo, isCheckingShare, router, token]);
+
+  if (status === 'loading' || isCheckingShare) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 

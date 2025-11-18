@@ -1,0 +1,275 @@
+import { test, expect } from '@playwright/test';
+import { setupTest, cleanupTest } from './helpers/fixtures';
+
+test.describe('Public Gallery', () => {
+  test.describe('Unauthenticated Access', () => {
+    test('should allow unauthenticated users to access gallery page', async ({ page }) => {
+      // Navigate to gallery without logging in
+      await page.goto('/gallery');
+
+      // Should be able to access the page
+      await expect(page).toHaveURL(/\/gallery/);
+      
+      // Should see the gallery header
+      await expect(page.getByRole('heading', { name: /Public Gallery/i })).toBeVisible();
+      
+      // Should see login button for unauthenticated users
+      await expect(page.getByRole('button', { name: /Login/i })).toBeVisible();
+    });
+
+    test('should show only public prompts to unauthenticated users', async ({ page, request }) => {
+      const { user, cleanup } = await setupTest(request);
+
+      try {
+        // Create a public prompt (visible to everyone)
+        await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Truly Public Prompt',
+              content: 'This is visible to everyone',
+              privacy: 'public',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        // Create a registered-only prompt (visible to registered users only)
+        await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Registered Only Prompt',
+              content: 'This is visible to registered users',
+              privacy: 'registered',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        // Navigate to gallery as unauthenticated user
+        await page.goto('/gallery');
+
+        // Should see the public prompt
+        await expect(page.getByText('Truly Public Prompt')).toBeVisible();
+
+        // Should NOT see the registered-only prompt
+        await expect(page.getByText('Registered Only Prompt')).not.toBeVisible();
+      } finally {
+        await cleanup();
+      }
+    });
+
+    test('should allow unauthenticated users to copy prompts', async ({ page, request }) => {
+      const { user, cleanup } = await setupTest(request);
+
+      try {
+        // Create a public prompt
+        await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Copyable Prompt',
+              content: 'Test content to copy',
+              privacy: 'public',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        await page.goto('/gallery');
+
+        // Find the prompt card and hover to reveal actions
+        const promptCard = page.getByText('Copyable Prompt').locator('..');
+        await promptCard.hover();
+
+        // Click the copy button
+        const copyButton = promptCard.getByRole('button', { name: /copy/i });
+        await copyButton.click();
+
+        // Should see success toast
+        await expect(page.getByText(/Copied to clipboard/i)).toBeVisible();
+      } finally {
+        await cleanup();
+      }
+    });
+
+    test('should redirect unauthenticated users to login when viewing prompt details', async ({ page, request }) => {
+      const { user, cleanup } = await setupTest(request);
+
+      try {
+        // Create a public prompt
+        const response = await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Detail View Prompt',
+              content: 'Test content',
+              privacy: 'public',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        await page.goto('/gallery');
+
+        // Find the prompt card and hover to reveal actions
+        const promptCard = page.getByText('Detail View Prompt').locator('..');
+        await promptCard.hover();
+
+        // Click the View button
+        const viewButton = promptCard.getByRole('button', { name: /View/i });
+        await viewButton.click();
+
+        // Should see login required toast
+        await expect(page.getByText(/Login required/i)).toBeVisible();
+
+        // Should redirect to login page
+        await expect(page).toHaveURL(/\/auth\/login/);
+      } finally {
+        await cleanup();
+      }
+    });
+  });
+
+  test.describe('Authenticated Access', () => {
+    test('should show both public and registered prompts to authenticated users', async ({ page, request }) => {
+      const { user, cleanup } = await setupTest(request);
+
+      try {
+        // Create a public prompt
+        await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Public Prompt',
+              content: 'Visible to everyone',
+              privacy: 'public',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        // Create a registered-only prompt
+        await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Registered Prompt',
+              content: 'Visible to registered users',
+              privacy: 'registered',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        await page.goto('/gallery');
+
+        // Should see both prompts
+        await expect(page.getByText('Public Prompt')).toBeVisible();
+        await expect(page.getByText('Registered Prompt')).toBeVisible();
+      } finally {
+        await cleanup();
+      }
+    });
+
+    test('should allow authenticated users to view prompt details', async ({ page, request }) => {
+      const { user, cleanup } = await setupTest(request);
+
+      try {
+        // Create a public prompt
+        const createResponse = await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Viewable Prompt',
+              content: 'Test content',
+              privacy: 'public',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        await page.goto('/gallery');
+
+        // Find the prompt card and click View
+        const promptCard = page.getByText('Viewable Prompt').locator('..');
+        await promptCard.hover();
+        
+        const viewButton = promptCard.getByRole('button', { name: /View/i });
+        await viewButton.click();
+
+        // Should navigate to editor page
+        await expect(page).toHaveURL(/\/editor\//);
+      } finally {
+        await cleanup();
+      }
+    });
+
+    test('should show dashboard button for authenticated users', async ({ page, request }) => {
+      const { user, cleanup } = await setupTest(request);
+
+      try {
+        await page.goto('/gallery');
+
+        // Should see dashboard button (Home icon)
+        await expect(page.getByTitle('Back to Dashboard')).toBeVisible();
+        
+        // Should NOT see login button
+        await expect(page.getByRole('button', { name: /^Login$/i })).not.toBeVisible();
+      } finally {
+        await cleanup();
+      }
+    });
+  });
+
+  test.describe('Privacy Level Changes', () => {
+    test('should support all four privacy levels', async ({ page, request }) => {
+      const { user, cleanup } = await setupTest(request);
+
+      try {
+        // Create a prompt
+        const createResponse = await request.post('/api/trpc/prompt.create', {
+          data: {
+            json: {
+              title: 'Privacy Test Prompt',
+              content: 'Test content',
+              privacy: 'private',
+            },
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const promptData = await createResponse.json();
+        const promptId = promptData.result.data.json.id;
+
+        // Navigate to the prompt editor
+        await page.goto(`/editor/${promptId}`);
+
+        // Open the metadata panel
+        await page.getByRole('button', { name: /metadata/i }).click();
+
+        // Check that all privacy levels are available
+        const privacySelect = page.locator('[name="privacy"]').or(page.getByLabel(/privacy/i));
+        await privacySelect.click();
+
+        // Should see all four options
+        await expect(page.getByRole('option', { name: /^Private$/i })).toBeVisible();
+        await expect(page.getByRole('option', { name: /Shared/i })).toBeVisible();
+        await expect(page.getByRole('option', { name: /Registered Users/i })).toBeVisible();
+        await expect(page.getByRole('option', { name: /^Public$/i })).toBeVisible();
+      } finally {
+        await cleanup();
+      }
+    });
+  });
+});

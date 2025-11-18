@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
 export const shareRouter = createTRPCRouter({
@@ -501,6 +501,45 @@ export const shareRouter = createTRPCRouter({
       };
     }),
 
+  // Check share token info (public - for unauthenticated access)
+  checkShareToken: publicProcedure
+    .input(z.object({ shareToken: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const share = await ctx.prisma.promptShare.findUnique({
+        where: { shareToken: input.shareToken },
+        include: {
+          prompt: {
+            select: {
+              id: true,
+              privacy: true,
+              isDeleted: true,
+            },
+          },
+        },
+      });
+
+      if (!share) {
+        return {
+          found: false,
+          isPublic: false,
+          promptId: null,
+          isExpired: false,
+          isDeleted: false,
+        };
+      }
+
+      // Check if expired
+      const isExpired = share.expiresAt ? share.expiresAt < new Date() : false;
+      
+      return {
+        found: true,
+        isPublic: share.prompt.privacy === 'public',
+        promptId: share.prompt.id,
+        isExpired,
+        isDeleted: share.prompt.isDeleted,
+      };
+    }),
+
   // Make a prompt public
   makePublic: protectedProcedure
     .input(z.object({ promptId: z.string() }))
@@ -533,6 +572,46 @@ export const shareRouter = createTRPCRouter({
         data: {
           userId: ctx.session.user.id,
           action: "made_public",
+          entityType: "prompt",
+          entityId: input.promptId,
+        },
+      });
+
+      return updated;
+    }),
+
+  // Make a prompt visible to registered users only
+  makeRegistered: protectedProcedure
+    .input(z.object({ promptId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const prompt = await ctx.prisma.prompt.findUnique({
+        where: { id: input.promptId },
+      });
+
+      if (!prompt) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Prompt not found",
+        });
+      }
+
+      if (prompt.userId !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to change this prompt's privacy",
+        });
+      }
+
+      const updated = await ctx.prisma.prompt.update({
+        where: { id: input.promptId },
+        data: { privacy: "registered" },
+      });
+
+      // Log activity
+      await ctx.prisma.activityLog.create({
+        data: {
+          userId: ctx.session.user.id,
+          action: "made_registered",
           entityType: "prompt",
           entityId: input.promptId,
         },
