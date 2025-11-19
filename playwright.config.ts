@@ -10,7 +10,7 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 1 : 0,
+  retries: 0, // Disable retries to prevent infinite loops
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Global timeout */
@@ -67,7 +67,7 @@ export default defineConfig({
     command: 'pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 180000, // Increase timeout for CI
+    timeout: 300000, // 5 minutes for server to start
     stdout: 'pipe',
     stderr: 'pipe',
   },
