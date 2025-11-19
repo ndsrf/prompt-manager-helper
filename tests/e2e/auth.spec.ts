@@ -35,9 +35,9 @@ test.describe('Authentication', () => {
     test('should login successfully with valid credentials', async ({ page }) => {
       await page.goto('/auth/login', { waitUntil: 'domcontentloaded' });
       
-      await page.waitForSelector('input[name="email"]', { timeout: 10000 });
-      await page.fill('input[name="email"]', testUser.email);
-      await page.fill('input[name="password"]', 'Test123!@#');
+      await page.waitForSelector('#email', { state: 'visible', timeout: 10000 });
+      await page.fill('#email', testUser.email);
+      await page.fill('#password', 'Test123!@#');
       await page.click('button[type="submit"]');
 
       // Should redirect to dashboard

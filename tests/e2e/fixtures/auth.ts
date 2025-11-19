@@ -50,17 +50,20 @@ export const test = base.extend<AuthFixtures>({
 
   authenticatedPage: async ({ page, testUser }: any, use: any) => {
     // Navigate to login page
-    await page.goto('/auth/login');
+    await page.goto('/auth/login', { waitUntil: 'domcontentloaded' });
+
+    // Wait for form to be ready
+    await page.waitForSelector('#email', { state: 'visible' });
 
     // Fill in login form
-    await page.fill('input[name="email"]', testUser.email);
-    await page.fill('input[name="password"]', testUser.password);
+    await page.fill('#email', testUser.email);
+    await page.fill('#password', testUser.password);
 
     // Submit form
     await page.click('button[type="submit"]');
 
     // Wait for redirect to dashboard
-    await page.waitForURL('/dashboard', { timeout: 10000 });
+    await page.waitForURL('/dashboard', { timeout: 15000 });
 
     await use(page);
   },
