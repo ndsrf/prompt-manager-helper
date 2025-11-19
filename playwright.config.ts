@@ -6,13 +6,15 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   /* Run tests in files in parallel */
-  fullyParallel: true,
+  fullyParallel: !process.env.CI, // Disable parallel in CI to avoid timeouts
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
+  /* Global timeout */
+  timeout: 30000,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -23,6 +25,10 @@ export default defineConfig({
     trace: 'on-first-retry',
     /* Screenshot on failure */
     screenshot: 'only-on-failure',
+    /* Navigation timeout */
+    navigationTimeout: 30000,
+    /* Action timeout */
+    actionTimeout: 10000,
   },
 
   /* Configure projects for major browsers */
@@ -61,8 +67,13 @@ export default defineConfig({
     command: 'pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 180000, // Increase timeout for CI
     stdout: 'pipe',
     stderr: 'pipe',
+  },
+  
+  /* Expect timeout */
+  expect: {
+    timeout: 10000,
   },
 });
