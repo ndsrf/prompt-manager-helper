@@ -29,6 +29,16 @@ jest.mock('@/lib/trpc/client', () => ({
         useMutation: jest.fn(),
       },
     },
+    share: {
+      getSharedWithMe: {
+        useQuery: jest.fn(),
+      },
+    },
+    analytics: {
+      recordUsage: {
+        useMutation: jest.fn(),
+      },
+    },
   },
 }));
 
@@ -53,12 +63,23 @@ describe('PromptList', () => {
       refetch: mockRefetch,
     });
 
+    trpc.share.getSharedWithMe.useQuery.mockReturnValue({
+      data: { items: [] },
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
     trpc.prompt.toggleFavorite.useMutation.mockReturnValue({
       mutateAsync: mockToggleFavorite,
     });
 
     trpc.prompt.delete.useMutation.mockReturnValue({
       mutateAsync: mockDelete,
+    });
+
+    trpc.analytics.recordUsage.useMutation.mockReturnValue({
+      mutate: jest.fn(),
     });
   });
 
@@ -226,7 +247,8 @@ describe('PromptList', () => {
       expect(trpc.prompt.getAll.useQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           folderId: 'folder-123',
-        })
+        }),
+        expect.anything()
       );
     });
 
@@ -236,7 +258,8 @@ describe('PromptList', () => {
       expect(trpc.prompt.getAll.useQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           tagIds: ['tag1', 'tag2'],
-        })
+        }),
+        expect.anything()
       );
     });
 
@@ -246,7 +269,8 @@ describe('PromptList', () => {
       expect(trpc.prompt.getAll.useQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           search: 'test search',
-        })
+        }),
+        expect.anything()
       );
     });
   });

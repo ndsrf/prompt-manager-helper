@@ -1,9 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test as baseTest, expect } from '@playwright/test';
+import { test as authTest } from './fixtures/auth';
+import { PrismaClient } from '@prisma/client';
 import { setupTest, cleanupTest } from './helpers/fixtures';
 
-test.describe('Public Gallery', () => {
-  test.describe('Unauthenticated Access', () => {
-    test('should allow unauthenticated users to access gallery page', async ({ page }) => {
+const prisma = new PrismaClient();
+
+baseTest.describe('Public Gallery', () => {
+  baseTest.describe('Unauthenticated Access', () => {
+    baseTest('should allow unauthenticated users to access gallery page', async ({ page }) => {
       // Navigate to gallery without logging in
       await page.goto('/gallery');
 
@@ -17,35 +21,29 @@ test.describe('Public Gallery', () => {
       await expect(page.getByRole('button', { name: /Login/i })).toBeVisible();
     });
 
-    test('should show only public prompts to unauthenticated users', async ({ page, request }) => {
-      const { user, cleanup } = await setupTest(request);
+    baseTest('should show only public prompts to unauthenticated users', async ({ page }) => {
+      const { user, cleanup } = await setupTest();
 
       try {
         // Create a public prompt (visible to everyone)
-        await request.post('/api/trpc/prompt.create', {
+        await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Truly Public Prompt',
-              content: 'This is visible to everyone',
-              privacy: 'public',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Truly Public Prompt',
+            content: 'This is visible to everyone',
+            privacy: 'public',
+            targetLlm: 'chatgpt',
           },
         });
 
         // Create a registered-only prompt (visible to registered users only)
-        await request.post('/api/trpc/prompt.create', {
+        await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Registered Only Prompt',
-              content: 'This is visible to registered users',
-              privacy: 'registered',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Registered Only Prompt',
+            content: 'This is visible to registered users',
+            privacy: 'registered',
+            targetLlm: 'chatgpt',
           },
         });
 
@@ -62,21 +60,18 @@ test.describe('Public Gallery', () => {
       }
     });
 
-    test('should allow unauthenticated users to copy prompts', async ({ page, request }) => {
-      const { user, cleanup } = await setupTest(request);
+    baseTest('should allow unauthenticated users to copy prompts', async ({ page }) => {
+      const { user, cleanup } = await setupTest();
 
       try {
         // Create a public prompt
-        await request.post('/api/trpc/prompt.create', {
+        await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Copyable Prompt',
-              content: 'Test content to copy',
-              privacy: 'public',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Copyable Prompt',
+            content: 'Test content to copy',
+            privacy: 'public',
+            targetLlm: 'chatgpt',
           },
         });
 
@@ -97,21 +92,18 @@ test.describe('Public Gallery', () => {
       }
     });
 
-    test('should redirect unauthenticated users to login when viewing prompt details', async ({ page, request }) => {
-      const { user, cleanup } = await setupTest(request);
+    baseTest('should redirect unauthenticated users to login when viewing prompt details', async ({ page }) => {
+      const { user, cleanup } = await setupTest();
 
       try {
         // Create a public prompt
-        const response = await request.post('/api/trpc/prompt.create', {
+        await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Detail View Prompt',
-              content: 'Test content',
-              privacy: 'public',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Detail View Prompt',
+            content: 'Test content',
+            privacy: 'public',
+            targetLlm: 'chatgpt',
           },
         });
 
@@ -136,137 +128,122 @@ test.describe('Public Gallery', () => {
     });
   });
 
-  test.describe('Authenticated Access', () => {
-    test('should show both public and registered prompts to authenticated users', async ({ page, request }) => {
-      const { user, cleanup } = await setupTest(request);
+  authTest.describe('Authenticated Access', () => {
+    authTest('should show both public and registered prompts to authenticated users', async ({ authenticatedPage, testUser }) => {
+      const { user, cleanup } = await setupTest();
 
       try {
         // Create a public prompt
-        await request.post('/api/trpc/prompt.create', {
+        await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Public Prompt',
-              content: 'Visible to everyone',
-              privacy: 'public',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Public Prompt',
+            content: 'Visible to everyone',
+            privacy: 'public',
+            targetLlm: 'chatgpt',
           },
         });
 
         // Create a registered-only prompt
-        await request.post('/api/trpc/prompt.create', {
+        await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Registered Prompt',
-              content: 'Visible to registered users',
-              privacy: 'registered',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Registered Prompt',
+            content: 'Visible to registered users',
+            privacy: 'registered',
+            targetLlm: 'chatgpt',
           },
         });
 
-        await page.goto('/gallery');
+        await authenticatedPage.goto('/gallery');
 
         // Should see both prompts
-        await expect(page.getByText('Public Prompt')).toBeVisible();
-        await expect(page.getByText('Registered Prompt')).toBeVisible();
+        await expect(authenticatedPage.getByText('Public Prompt')).toBeVisible();
+        await expect(authenticatedPage.getByText('Registered Prompt')).toBeVisible();
       } finally {
         await cleanup();
       }
     });
 
-    test('should allow authenticated users to view prompt details', async ({ page, request }) => {
-      const { user, cleanup } = await setupTest(request);
+    authTest('should allow authenticated users to view prompt details', async ({ authenticatedPage, testUser }) => {
+      const { user, cleanup } = await setupTest();
 
       try {
         // Create a public prompt
-        const createResponse = await request.post('/api/trpc/prompt.create', {
+        await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Viewable Prompt',
-              content: 'Test content',
-              privacy: 'public',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Viewable Prompt',
+            content: 'Test content',
+            privacy: 'public',
+            targetLlm: 'chatgpt',
           },
         });
 
-        await page.goto('/gallery');
+        await authenticatedPage.goto('/gallery');
 
         // Find the prompt card and click View
-        const promptCard = page.getByText('Viewable Prompt').locator('..');
+        const promptCard = authenticatedPage.getByText('Viewable Prompt').locator('..');
         await promptCard.hover();
         
         const viewButton = promptCard.getByRole('button', { name: /View/i });
         await viewButton.click();
 
         // Should navigate to editor page
-        await expect(page).toHaveURL(/\/editor\//);
+        await expect(authenticatedPage).toHaveURL(/\/editor\//);
       } finally {
         await cleanup();
       }
     });
 
-    test('should show dashboard button for authenticated users', async ({ page, request }) => {
-      const { user, cleanup } = await setupTest(request);
+    authTest('should show dashboard button for authenticated users', async ({ authenticatedPage, testUser }) => {
+      const { user, cleanup } = await setupTest();
 
       try {
-        await page.goto('/gallery');
+        await authenticatedPage.goto('/gallery');
 
         // Should see dashboard button (Home icon)
-        await expect(page.getByTitle('Back to Dashboard')).toBeVisible();
+        await expect(authenticatedPage.getByTitle('Back to Dashboard')).toBeVisible();
         
         // Should NOT see login button
-        await expect(page.getByRole('button', { name: /^Login$/i })).not.toBeVisible();
+        await expect(authenticatedPage.getByRole('button', { name: /^Login$/i })).not.toBeVisible();
       } finally {
         await cleanup();
       }
     });
   });
 
-  test.describe('Privacy Level Changes', () => {
-    test('should support all four privacy levels', async ({ page, request }) => {
-      const { user, cleanup } = await setupTest(request);
+  authTest.describe('Privacy Level Changes', () => {
+    authTest('should support all four privacy levels', async ({ authenticatedPage, testUser }) => {
+      const { user, cleanup } = await setupTest();
 
       try {
         // Create a prompt
-        const createResponse = await request.post('/api/trpc/prompt.create', {
+        const prompt = await prisma.prompt.create({
           data: {
-            json: {
-              title: 'Privacy Test Prompt',
-              content: 'Test content',
-              privacy: 'private',
-            },
-          },
-          headers: {
-            'Content-Type': 'application/json',
+            userId: user.id,
+            title: 'Privacy Test Prompt',
+            content: 'Test content',
+            privacy: 'private',
+            targetLlm: 'chatgpt',
           },
         });
 
-        const promptData = await createResponse.json();
-        const promptId = promptData.result.data.json.id;
-
         // Navigate to the prompt editor
-        await page.goto(`/editor/${promptId}`);
+        await authenticatedPage.goto(`/editor/${prompt.id}`);
 
         // Open the metadata panel
-        await page.getByRole('button', { name: /metadata/i }).click();
+        await authenticatedPage.getByRole('button', { name: /metadata/i }).click();
 
         // Check that all privacy levels are available
-        const privacySelect = page.locator('[name="privacy"]').or(page.getByLabel(/privacy/i));
+        const privacySelect = authenticatedPage.locator('[name="privacy"]').or(authenticatedPage.getByLabel(/privacy/i));
         await privacySelect.click();
 
         // Should see all four options
-        await expect(page.getByRole('option', { name: /^Private$/i })).toBeVisible();
-        await expect(page.getByRole('option', { name: /Shared/i })).toBeVisible();
-        await expect(page.getByRole('option', { name: /Registered Users/i })).toBeVisible();
-        await expect(page.getByRole('option', { name: /^Public$/i })).toBeVisible();
+        await expect(authenticatedPage.getByRole('option', { name: /^Private$/i })).toBeVisible();
+        await expect(authenticatedPage.getByRole('option', { name: /Shared/i })).toBeVisible();
+        await expect(authenticatedPage.getByRole('option', { name: /Registered Users/i })).toBeVisible();
+        await expect(authenticatedPage.getByRole('option', { name: /^Public$/i })).toBeVisible();
       } finally {
         await cleanup();
       }

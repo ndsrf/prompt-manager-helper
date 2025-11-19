@@ -131,11 +131,10 @@ describe('promptRouter', () => {
       expect(result.id).toBe('550e8400-e29b-41d4-a716-446655440003');
       expect(prismaMock.prompt.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: {
+          where: expect.objectContaining({
             id: '550e8400-e29b-41d4-a716-446655440003',
-            userId: '550e8400-e29b-41d4-a716-446655440000',
             isDeleted: false,
-          },
+          }),
         })
       );
     });

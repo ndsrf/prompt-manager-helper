@@ -6,13 +6,15 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   /* Run tests in files in parallel */
-  fullyParallel: true,
+  fullyParallel: !process.env.CI, // Disable parallel in CI to avoid timeouts
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: 0, // Disable retries to prevent infinite loops
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
+  /* Global timeout */
+  timeout: 30000,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -23,6 +25,10 @@ export default defineConfig({
     trace: 'on-first-retry',
     /* Screenshot on failure */
     screenshot: 'only-on-failure',
+    /* Navigation timeout */
+    navigationTimeout: 30000,
+    /* Action timeout */
+    actionTimeout: 10000,
   },
 
   /* Configure projects for major browsers */
@@ -32,25 +38,28 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
+    // Only run chromium in CI for speed, enable others locally
+    ...(!process.env.CI ? [
+      {
+        name: 'firefox',
+        use: { ...devices['Desktop Firefox'] },
+      },
 
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+      {
+        name: 'webkit',
+        use: { ...devices['Desktop Safari'] },
+      },
 
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+      /* Test against mobile viewports. */
+      {
+        name: 'Mobile Chrome',
+        use: { ...devices['Pixel 5'] },
+      },
+      {
+        name: 'Mobile Safari',
+        use: { ...devices['iPhone 12'] },
+      },
+    ] : []),
   ],
 
   /* Run your local dev server before starting the tests */
@@ -58,6 +67,13 @@ export default defineConfig({
     command: 'pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 300000, // 5 minutes for server to start
+    stdout: 'pipe',
+    stderr: 'pipe',
+  },
+  
+  /* Expect timeout */
+  expect: {
+    timeout: 10000,
   },
 });

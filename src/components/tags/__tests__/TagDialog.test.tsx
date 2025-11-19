@@ -118,9 +118,10 @@ describe('TagDialog', () => {
       await userEvent.type(nameInput, 'Test Tag');
 
       // Find color buttons and click one
-      const colorButtons = screen.getAllByRole('button').filter(btn =>
-        btn.style.backgroundColor && btn.type === 'button' && !btn.textContent
-      );
+      const colorButtons = screen.getAllByRole('button').filter(btn => {
+        const buttonElement = btn as HTMLButtonElement;
+        return buttonElement.style.backgroundColor && buttonElement.type === 'button' && !buttonElement.textContent;
+      });
 
       expect(colorButtons.length).toBeGreaterThan(0);
       await userEvent.click(colorButtons[2]); // Select third color

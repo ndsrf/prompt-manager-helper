@@ -49,7 +49,7 @@ describe('AI Service', () => {
       expect(result.response).toBe('Test response from GPT');
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'gpt-4',
+          model: 'gpt-4o',
           messages: [{ role: 'user', content: 'Test prompt' }],
         })
       );
