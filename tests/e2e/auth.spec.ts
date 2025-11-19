@@ -8,6 +8,7 @@ test.describe('Authentication', () => {
   test.describe('Registration', () => {
     test('should register a new user successfully', async ({ page }) => {
       await page.goto('/auth/register');
+      await page.waitForLoadState('networkidle');
 
       const timestamp = Date.now();
       const email = `newuser-${timestamp}@example.com`;
@@ -30,6 +31,7 @@ test.describe('Authentication', () => {
 
     test('should show validation errors for invalid inputs', async ({ page }) => {
       await page.goto('/auth/register');
+      await page.waitForLoadState('networkidle');
 
       // Submit empty form
       await page.click('button[type="submit"]');
@@ -40,6 +42,7 @@ test.describe('Authentication', () => {
 
     test('should show error for mismatched passwords', async ({ page }) => {
       await page.goto('/auth/register');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="name"]', 'Test User');
       await page.fill('input[name="email"]', 'test@example.com');
@@ -53,6 +56,7 @@ test.describe('Authentication', () => {
 
     test('should show error for weak password', async ({ page }) => {
       await page.goto('/auth/register');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="name"]', 'Test User');
       await page.fill('input[name="email"]', 'test@example.com');
@@ -82,6 +86,7 @@ test.describe('Authentication', () => {
       });
 
       await page.goto('/auth/register');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="name"]', 'New User');
       await page.fill('input[name="email"]', existingEmail);
@@ -126,6 +131,7 @@ test.describe('Authentication', () => {
 
     test('should login successfully with valid credentials', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="email"]', testUser.email);
       await page.fill('input[name="password"]', 'Test123!@#');
@@ -139,6 +145,7 @@ test.describe('Authentication', () => {
 
     test('should show error for invalid credentials', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="email"]', testUser.email);
       await page.fill('input[name="password"]', 'WrongPassword123!');
@@ -150,6 +157,7 @@ test.describe('Authentication', () => {
 
     test('should show error for non-existent user', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="email"]', 'nonexistent@example.com');
       await page.fill('input[name="password"]', 'Test123!@#');
@@ -161,6 +169,7 @@ test.describe('Authentication', () => {
 
     test('should show validation errors for empty fields', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       await page.click('button[type="submit"]');
 
@@ -169,6 +178,7 @@ test.describe('Authentication', () => {
 
     test('should have link to registration page', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       const registerLink = page.locator('a[href*="/auth/register"]');
       await expect(registerLink).toBeVisible();
@@ -176,6 +186,7 @@ test.describe('Authentication', () => {
 
     test('should have link to forgot password', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       const forgotLink = page.locator('a[href*="/auth/forgot-password"]');
       await expect(forgotLink).toBeVisible();
@@ -210,6 +221,7 @@ test.describe('Authentication', () => {
 
     test('should persist session after page reload', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="email"]', testUser.email);
       await page.fill('input[name="password"]', 'Test123!@#');
@@ -226,6 +238,7 @@ test.describe('Authentication', () => {
 
     test('should logout successfully', async ({ page }) => {
       await page.goto('/auth/login');
+      await page.waitForLoadState('networkidle');
 
       await page.fill('input[name="email"]', testUser.email);
       await page.fill('input[name="password"]', 'Test123!@#');
