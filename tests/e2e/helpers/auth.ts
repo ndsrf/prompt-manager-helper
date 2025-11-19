@@ -5,23 +5,25 @@ import { Page } from '@playwright/test';
  */
 
 export async function signUp(page: Page, email: string, password: string, name: string) {
-  await page.goto('/auth/signup');
+  await page.goto('/auth/register', { waitUntil: 'domcontentloaded' });
 
-  await page.fill('input[name="name"]', name);
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
+  await page.waitForSelector('#name', { state: 'visible' });
+  await page.fill('#name', name);
+  await page.fill('#email', email);
+  await page.fill('#password', password);
 
   await page.click('button[type="submit"]');
 
-  // Wait for redirect after successful signup
-  await page.waitForURL('/dashboard', { timeout: 10000 });
+  // Wait for redirect after successful signup (goes to login page)
+  await page.waitForURL(/\/auth\/login/, { timeout: 10000 });
 }
 
 export async function signIn(page: Page, email: string, password: string) {
-  await page.goto('/auth/signin');
+  await page.goto('/auth/login', { waitUntil: 'domcontentloaded' });
 
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
+  await page.waitForSelector('#email', { state: 'visible' });
+  await page.fill('#email', email);
+  await page.fill('#password', password);
 
   await page.click('button[type="submit"]');
 
