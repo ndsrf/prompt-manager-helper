@@ -352,6 +352,7 @@ export function PublicGalleryClient() {
                         className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0" 
                         size="sm"
                         onClick={() => handleViewPrompt(prompt.id)}
+                        aria-label="View prompt details"
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View
@@ -360,6 +361,7 @@ export function PublicGalleryClient() {
                         size="sm"
                         className="bg-white/5 hover:bg-white/10 text-white border-white/10"
                         onClick={() => void handleCopyPrompt(prompt.id, prompt.content, prompt.title)}
+                        aria-label="Copy prompt"
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
