@@ -32,7 +32,6 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
     };
 
     const url = `${getBaseUrl()}/api/trpc`;
-    console.log('[TRPCProvider] Initializing tRPC client with URL:', url);
 
     return trpc.createClient({
       links: [
