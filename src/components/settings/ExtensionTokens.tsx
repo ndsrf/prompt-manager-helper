@@ -92,8 +92,8 @@ export function ExtensionTokens() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Extension Tokens</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="text-xl font-semibold text-white mb-2">Extension Tokens</h2>
+        <p className="text-sm text-gray-400">
           Generate tokens to connect the Chrome extension to your account. Tokens expire after 90 days.
         </p>
       </div>
@@ -101,14 +101,14 @@ export function ExtensionTokens() {
       {/* Generate New Token Dialog */}
       {showNewTokenDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-slate-900 rounded-lg shadow-xl p-6 w-full max-w-md border border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">
               Generate Extension Token
             </h3>
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="token-name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="token-name" className="block text-sm font-medium text-gray-300 mb-2">
                   Token Name
                 </label>
                 <input
@@ -117,7 +117,7 @@ export function ExtensionTokens() {
                   value={newTokenName}
                   onChange={(e) => setNewTokenName(e.target.value)}
                   placeholder="e.g., Work Laptop, Personal Chrome"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -127,14 +127,14 @@ export function ExtensionTokens() {
                     setShowNewTokenDialog(false);
                     setNewTokenName('');
                   }}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex-1 px-4 py-2 text-white bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleGenerateToken}
                   disabled={!newTokenName.trim() || loading}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? 'Generating...' : 'Generate'}
                 </button>
@@ -146,16 +146,16 @@ export function ExtensionTokens() {
 
       {/* Generated Token Display */}
       {generatedToken && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-medium text-green-900 mb-2">Token Generated Successfully</h4>
-              <p className="text-sm text-green-800 mb-3">
+              <h4 className="font-medium text-green-300 mb-2">Token Generated Successfully</h4>
+              <p className="text-sm text-green-200 mb-3">
                 Copy this token now. For security reasons, you won&apos;t be able to see it again.
               </p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 px-3 py-2 bg-white border border-green-300 rounded text-sm font-mono break-all">
+                <code className="flex-1 px-3 py-2 bg-white/5 border border-green-500/30 text-white rounded text-sm font-mono break-all">
                   {generatedToken}
                 </code>
                 <button
@@ -179,7 +179,7 @@ export function ExtensionTokens() {
           </div>
           <button
             onClick={() => setGeneratedToken(null)}
-            className="mt-3 text-sm text-green-700 hover:text-green-800"
+            className="mt-3 text-sm text-green-300 hover:text-green-200"
           >
             I&apos;ve saved the token
           </button>
@@ -189,7 +189,7 @@ export function ExtensionTokens() {
       {/* Generate Button */}
       <button
         onClick={() => setShowNewTokenDialog(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors"
       >
         <Plus className="w-4 h-4" />
         Generate New Token
@@ -198,9 +198,9 @@ export function ExtensionTokens() {
       {/* Token List */}
       <div className="space-y-3">
         {tokens.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-gray-500">No extension tokens yet</p>
-            <p className="text-sm text-gray-400 mt-1">
+          <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10">
+            <p className="text-gray-400">No extension tokens yet</p>
+            <p className="text-sm text-gray-500 mt-1">
               Generate a token to connect the Chrome extension
             </p>
           </div>
@@ -208,11 +208,11 @@ export function ExtensionTokens() {
           tokens.map((token) => (
             <div
               key={token.id}
-              className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg"
+              className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-lg"
             >
               <div>
-                <p className="font-medium text-gray-900">{token.name || 'Unnamed Token'}</p>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                <p className="font-medium text-white">{token.name || 'Unnamed Token'}</p>
+                <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
                   <span>
                     Created {new Date(token.createdAt).toLocaleDateString()}
                   </span>
@@ -228,7 +228,7 @@ export function ExtensionTokens() {
               </div>
               <button
                 onClick={() => handleRevokeToken(token.id)}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                 title="Revoke token"
               >
                 <Trash2 className="w-4 h-4" />

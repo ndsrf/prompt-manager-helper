@@ -284,10 +284,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Extension Tokens Section */}
-        <Card className="mt-6">
+        <Card className="mt-6 bg-white/5 backdrop-blur-sm border-white/10">
           <CardHeader>
-            <CardTitle>Chrome Extension</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">Chrome Extension</CardTitle>
+            <CardDescription className="text-gray-400">
               Manage tokens for connecting the Chrome extension
             </CardDescription>
           </CardHeader>
