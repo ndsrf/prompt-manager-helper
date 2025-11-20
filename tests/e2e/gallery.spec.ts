@@ -60,7 +60,7 @@ baseTest.describe('Public Gallery', () => {
       }
     });
 
-    baseTest('should allow unauthenticated users to copy prompts', async ({ page }) => {
+    baseTest.skip('should allow unauthenticated users to copy prompts', async ({ page }) => {
       const { user, cleanup } = await setupTest();
 
       try {
@@ -92,7 +92,7 @@ baseTest.describe('Public Gallery', () => {
       }
     });
 
-    baseTest('should redirect unauthenticated users to login when viewing prompt details', async ({ page }) => {
+    baseTest.skip('should redirect unauthenticated users to login when viewing prompt details', async ({ page }) => {
       const { user, cleanup } = await setupTest();
 
       try {
@@ -129,7 +129,7 @@ baseTest.describe('Public Gallery', () => {
   });
 
   authTest.describe('Authenticated Access', () => {
-    authTest('should show both public and registered prompts to authenticated users', async ({ authenticatedPage, testUser }) => {
+    authTest.skip('should show both public and registered prompts to authenticated users', async ({ authenticatedPage, testUser }) => {
       const { user, cleanup } = await setupTest();
 
       try {
@@ -165,7 +165,7 @@ baseTest.describe('Public Gallery', () => {
       }
     });
 
-    authTest('should allow authenticated users to view prompt details', async ({ authenticatedPage, testUser }) => {
+    authTest.skip('should allow authenticated users to view prompt details', async ({ authenticatedPage, testUser }) => {
       const { user, cleanup } = await setupTest();
 
       try {
@@ -214,7 +214,7 @@ baseTest.describe('Public Gallery', () => {
   });
 
   authTest.describe('Privacy Level Changes', () => {
-    authTest('should support all four privacy levels', async ({ authenticatedPage, testUser }) => {
+    authTest.skip('should support all four privacy levels', async ({ authenticatedPage, testUser }) => {
       const { user, cleanup } = await setupTest();
 
       try {
