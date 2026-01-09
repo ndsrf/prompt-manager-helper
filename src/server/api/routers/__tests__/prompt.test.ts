@@ -520,4 +520,165 @@ describe('promptRouter', () => {
       expect(result.byPrivacy).toEqual([]);
     });
   });
+
+  describe('getPromptsChat', () => {
+    const mockCSV = `act,prompt,for_devs,type,contributor
+"Linux Terminal","I want you to act as a linux terminal. I will type commands and you will reply with what the terminal should show.",TRUE,TEXT,contributor1
+"JavaScript Console","I want you to act as a javascript console.",TRUE,TEXT,contributor2
+"Excel Sheet","I want you to act as a text based excel.",FALSE,TEXT,contributor3`;
+
+    beforeEach(() => {
+      // Mock fetch globally
+      global.fetch = jest.fn();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should fetch and parse prompts from prompts.chat', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        text: async () => mockCSV,
+      });
+
+      const ctx = createMockContext({ authenticated: false });
+      const caller = promptRouter.createCaller(ctx);
+
+      const result = await caller.getPromptsChat({});
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toMatchObject({
+        title: 'Linux Terminal',
+        content: expect.stringContaining('linux terminal'),
+        source: 'prompts.chat',
+      });
+      expect(result[0].id).toMatch(/^prompts-chat-/);
+    });
+
+    it('should filter prompts by search query', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        text: async () => mockCSV,
+      });
+
+      const ctx = createMockContext({ authenticated: false });
+      const caller = promptRouter.createCaller(ctx);
+
+      const result = await caller.getPromptsChat({ search: 'javascript' });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('JavaScript Console');
+    });
+
+    it('should handle fetch errors gracefully', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 404,
+      });
+
+      const ctx = createMockContext({ authenticated: false });
+      const caller = promptRouter.createCaller(ctx);
+
+      await expect(caller.getPromptsChat({})).rejects.toThrow(TRPCError);
+    });
+
+    it('should use environment variable for CSV URL', async () => {
+      const customUrl = 'https://example.com/custom-prompts.csv';
+      process.env.PROMPTS_CHAT_CSV_URL = customUrl;
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        text: async () => mockCSV,
+      });
+
+      const ctx = createMockContext({ authenticated: false });
+      const caller = promptRouter.createCaller(ctx);
+
+      await caller.getPromptsChat({});
+
+      expect(global.fetch).toHaveBeenCalledWith(customUrl);
+
+      delete process.env.PROMPTS_CHAT_CSV_URL;
+    });
+  });
+
+  describe('copyFromPromptsChat', () => {
+    it('should copy prompt from prompts.chat to user library', async () => {
+      const ctx = createMockContext();
+      const caller = promptRouter.createCaller(ctx);
+
+      const mockPrompt = createTestPrompt({
+        id: 'new-prompt-id',
+        title: 'Linux Terminal',
+        content: 'I want you to act as a linux terminal.',
+      });
+
+      prismaMock.prompt.create.mockResolvedValue(mockPrompt as any);
+      prismaMock.promptVersion.create.mockResolvedValue({} as any);
+      prismaMock.activityLog.create.mockResolvedValue({} as any);
+
+      const result = await caller.copyFromPromptsChat({
+        title: 'Linux Terminal',
+        content: 'I want you to act as a linux terminal.',
+        folderId: null,
+      });
+
+      expect(result.title).toBe('Linux Terminal');
+      expect(prismaMock.prompt.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            title: 'Linux Terminal',
+            content: 'I want you to act as a linux terminal.',
+            privacy: 'private',
+            userId: '550e8400-e29b-41d4-a716-446655440000',
+          }),
+        })
+      );
+      expect(prismaMock.promptVersion.create).toHaveBeenCalled();
+      expect(prismaMock.activityLog.create).toHaveBeenCalled();
+    });
+
+    it('should require authentication', async () => {
+      const ctx = createMockContext({ authenticated: false });
+      const caller = promptRouter.createCaller(ctx);
+
+      await expect(
+        caller.copyFromPromptsChat({
+          title: 'Test',
+          content: 'Test content',
+          folderId: null,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should support custom folder assignment', async () => {
+      const ctx = createMockContext();
+      const caller = promptRouter.createCaller(ctx);
+
+      const folderId = '550e8400-e29b-41d4-a716-446655440001';
+      const mockPrompt = createTestPrompt({
+        id: 'new-prompt-id',
+        folderId,
+      });
+
+      prismaMock.prompt.create.mockResolvedValue(mockPrompt as any);
+      prismaMock.promptVersion.create.mockResolvedValue({} as any);
+      prismaMock.activityLog.create.mockResolvedValue({} as any);
+
+      await caller.copyFromPromptsChat({
+        title: 'Test',
+        content: 'Test content',
+        folderId,
+      });
+
+      expect(prismaMock.prompt.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            folderId,
+          }),
+        })
+      );
+    });
+  });
 });

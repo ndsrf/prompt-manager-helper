@@ -1264,8 +1264,9 @@ export const promptRouter = createTRPCRouter({
     }))
     .query(async ({ input }) => {
       try {
-        // Fetch CSV from GitHub
-        const response = await fetch('https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts.csv');
+        // Fetch CSV from configured URL
+        const csvUrl = process.env.PROMPTS_CHAT_CSV_URL || 'https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts.csv';
+        const response = await fetch(csvUrl);
 
         if (!response.ok) {
           throw new TRPCError({
@@ -1349,5 +1350,68 @@ export const promptRouter = createTRPCRouter({
           message: 'Failed to fetch prompts from prompts.chat',
         });
       }
+    }),
+
+  // Copy a prompt from prompts.chat to user's library
+  copyFromPromptsChat: protectedProcedure
+    .input(z.object({
+      title: z.string(),
+      content: z.string(),
+      folderId: z.string().uuid().optional().nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Create a copy of the prompt for the user
+      const copiedPrompt = await ctx.prisma.prompt.create({
+        data: {
+          title: input.title,
+          content: input.content,
+          description: input.content.substring(0, 200) + (input.content.length > 200 ? '...' : ''),
+          variables: [],
+          folderId: input.folderId,
+          privacy: 'private',
+          isFavorite: false,
+          userId,
+        },
+        include: {
+          folder: true,
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+      });
+
+      // Create initial version for the copied prompt
+      await ctx.prisma.promptVersion.create({
+        data: {
+          promptId: copiedPrompt.id,
+          versionNumber: 1,
+          title: copiedPrompt.title,
+          content: copiedPrompt.content,
+          variables: [],
+          changesSummary: 'Copied from Prompts.chat',
+          isSnapshot: true,
+          createdBy: userId,
+        },
+      });
+
+      // Log activity
+      await ctx.prisma.activityLog.create({
+        data: {
+          userId,
+          action: 'copied_from_prompts_chat',
+          entityType: 'prompt',
+          entityId: copiedPrompt.id,
+          metadata: {
+            title: copiedPrompt.title,
+            source: 'prompts.chat',
+          },
+        },
+      });
+
+      return copiedPrompt;
     }),
 });

@@ -80,6 +80,7 @@ export function PublicGalleryClient() {
     : localPrompts;
 
   const recordUsage = trpc.analytics.recordUsage.useMutation();
+  const copyFromPromptsChatMutation = trpc.prompt.copyFromPromptsChat.useMutation();
 
   // Scroll to highlighted prompt when data loads
   useEffect(() => {
@@ -128,6 +129,40 @@ export function PublicGalleryClient() {
       router.push(`/auth/login?callbackUrl=/editor/${promptId}`);
     } else {
       router.push(`/editor/${promptId}`);
+    }
+  };
+
+  const handleAddToLibrary = async (title: string, content: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please log in to add prompts to your library",
+      });
+      router.push('/auth/login?callbackUrl=/gallery');
+      return;
+    }
+
+    try {
+      const result = await copyFromPromptsChatMutation.mutateAsync({
+        title,
+        content,
+        folderId: null,
+      });
+
+      toast({
+        title: "Added to library",
+        description: `"${title}" has been added to your library`,
+      });
+
+      // Navigate to the editor with the new prompt
+      router.push(`/editor/${result.id}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add prompt to library",
+        variant: "destructive",
+      });
+      console.error('Failed to add prompt to library:', error);
     }
   };
 
@@ -407,26 +442,48 @@ export function PublicGalleryClient() {
 
                     {/* Actions */}
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {!isFromPromptsChat && (
-                        <Button
-                          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
-                          size="sm"
-                          onClick={() => handleViewPrompt(prompt.id)}
-                          aria-label="View prompt details"
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          View
-                        </Button>
+                      {isFromPromptsChat ? (
+                        <>
+                          <Button
+                            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
+                            size="sm"
+                            onClick={() => void handleAddToLibrary(prompt.title, prompt.content)}
+                            aria-label="Add to library"
+                            disabled={copyFromPromptsChatMutation.isPending}
+                          >
+                            <Star className="mr-2 h-4 w-4" />
+                            {copyFromPromptsChatMutation.isPending ? 'Adding...' : 'Add to Library'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-white/5 hover:bg-white/10 text-white border-white/10"
+                            onClick={() => void handleCopyPrompt(prompt.id, prompt.content, prompt.title, isFromPromptsChat)}
+                            aria-label="Copy prompt"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
+                            size="sm"
+                            onClick={() => handleViewPrompt(prompt.id)}
+                            aria-label="View prompt details"
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-white/5 hover:bg-white/10 text-white border-white/10"
+                            onClick={() => void handleCopyPrompt(prompt.id, prompt.content, prompt.title, isFromPromptsChat)}
+                            aria-label="Copy prompt"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
-                      <Button
-                        size="sm"
-                        className={`${isFromPromptsChat ? 'flex-1' : ''} bg-white/5 hover:bg-white/10 text-white border-white/10`}
-                        onClick={() => void handleCopyPrompt(prompt.id, prompt.content, prompt.title, isFromPromptsChat)}
-                        aria-label="Copy prompt"
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copy
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
