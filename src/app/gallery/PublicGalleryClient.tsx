@@ -342,7 +342,7 @@ export function PublicGalleryClient() {
           </Card>
         ) : (
           <>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-hidden">
               {prompts.map((prompt: any) => {
                 const isHighlighted = highlightId === prompt.id;
                 const isFromPromptsChat = prompt.source === 'prompts.chat';
@@ -351,13 +351,13 @@ export function PublicGalleryClient() {
                   <Card
                     key={prompt.id}
                     ref={(el) => { promptRefs.current[prompt.id] = el; }}
-                    className={`group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10 ${
+                    className={`group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10 overflow-hidden ${
                       isHighlighted ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-slate-950 bg-white/15' : ''
                     }`}
                   >
                   <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-lg line-clamp-2 flex-1 text-white">
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <CardTitle className="text-lg line-clamp-2 flex-1 text-white min-w-0 break-words">
                         {prompt.title}
                       </CardTitle>
                       {isFromPromptsChat ? (
@@ -377,15 +377,15 @@ export function PublicGalleryClient() {
                       )}
                     </div>
                     {prompt.description && (
-                      <CardDescription className="line-clamp-2 text-gray-400">
+                      <CardDescription className="line-clamp-2 text-gray-400 break-words overflow-hidden">
                         {prompt.description}
                       </CardDescription>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Content Preview */}
-                    <div className="rounded-lg bg-black/20 border border-white/5 p-3">
-                      <p className="text-xs font-mono text-gray-300 line-clamp-3">
+                    <div className="rounded-lg bg-black/20 border border-white/5 p-3 overflow-hidden">
+                      <p className="text-xs font-mono text-gray-300 line-clamp-3 break-words">
                         {prompt.content}
                       </p>
                     </div>
@@ -407,12 +407,19 @@ export function PublicGalleryClient() {
                     )}
 
                     {/* Metadata */}
-                    {!isFromPromptsChat && (
+                    {isFromPromptsChat ? (
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Globe className="h-4 w-4 text-green-400" />
+                          <span className="text-gray-300 text-xs">Prompts.chat</span>
+                        </div>
+                      </div>
+                    ) : (
                       <>
                         <div className="flex items-center justify-between text-xs text-gray-400">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 min-w-0">
                             {prompt.user.avatarUrl ? (
-                              <div className="relative h-5 w-5 rounded-full overflow-hidden border border-purple-500/30">
+                              <div className="relative h-5 w-5 rounded-full overflow-hidden border border-purple-500/30 shrink-0">
                                 <Image
                                   src={prompt.user.avatarUrl}
                                   alt={prompt.user.name ?? prompt.user.email}
@@ -421,7 +428,7 @@ export function PublicGalleryClient() {
                                 />
                               </div>
                             ) : (
-                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-[10px] font-medium text-white">
+                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-[10px] font-medium text-white shrink-0">
                                 {prompt.user.name?.[0]?.toUpperCase() ?? prompt.user.email?.[0]?.toUpperCase() ?? "?"}
                               </div>
                             )}
@@ -429,7 +436,7 @@ export function PublicGalleryClient() {
                               {prompt.user.name ?? prompt.user.email}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 shrink-0">
                             {prompt.targetLlm && (
                               <Badge className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 border-blue-500/30">
                                 {prompt.targetLlm}
