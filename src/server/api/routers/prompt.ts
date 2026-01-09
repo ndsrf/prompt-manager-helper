@@ -1256,4 +1256,162 @@ export const promptRouter = createTRPCRouter({
 
       return copiedPrompt;
     }),
+
+  // Get prompts from prompts.chat (awesome-chatgpt-prompts)
+  getPromptsChat: publicProcedure
+    .input(z.object({
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        // Fetch CSV from configured URL
+        const csvUrl = process.env.PROMPTS_CHAT_CSV_URL || 'https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts.csv';
+        const response = await fetch(csvUrl);
+
+        if (!response.ok) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to fetch prompts from prompts.chat',
+          });
+        }
+
+        const csvText = await response.text();
+
+        // Parse CSV manually (simple parser for this specific format)
+        const lines = csvText.split('\n');
+        const headers = lines[0]?.split(',') || [];
+
+        // Find column indices
+        const actIndex = headers.findIndex(h => h.toLowerCase().includes('act'));
+        const promptIndex = headers.findIndex(h => h.toLowerCase().includes('prompt'));
+
+        const prompts: Array<{
+          id: string;
+          title: string;
+          content: string;
+          description: string;
+          source: string;
+        }> = [];
+
+        // Parse each line (skip header)
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line.trim()) continue;
+
+          // Handle CSV parsing with quotes
+          const values: string[] = [];
+          let currentValue = '';
+          let insideQuotes = false;
+
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+
+            if (char === '"') {
+              insideQuotes = !insideQuotes;
+            } else if (char === ',' && !insideQuotes) {
+              values.push(currentValue.trim());
+              currentValue = '';
+            } else {
+              currentValue += char;
+            }
+          }
+          values.push(currentValue.trim());
+
+          const act = values[actIndex]?.replace(/^"|"$/g, '') || '';
+          const promptContent = values[promptIndex]?.replace(/^"|"$/g, '') || '';
+
+          // Apply search filter if provided
+          if (input.search) {
+            const searchLower = input.search.toLowerCase();
+            const actLower = act.toLowerCase();
+            const promptLower = promptContent.toLowerCase();
+
+            if (!actLower.includes(searchLower) && !promptLower.includes(searchLower)) {
+              continue;
+            }
+          }
+
+          if (act && promptContent) {
+            prompts.push({
+              id: `prompts-chat-${i}`,
+              title: act,
+              content: promptContent,
+              description: promptContent.substring(0, 200) + (promptContent.length > 200 ? '...' : ''),
+              source: 'prompts.chat',
+            });
+          }
+        }
+
+        return prompts;
+      } catch (error) {
+        console.error('Error fetching prompts.chat data:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch prompts from prompts.chat',
+        });
+      }
+    }),
+
+  // Copy a prompt from prompts.chat to user's library
+  copyFromPromptsChat: protectedProcedure
+    .input(z.object({
+      title: z.string(),
+      content: z.string(),
+      folderId: z.string().uuid().optional().nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Create a copy of the prompt for the user
+      const copiedPrompt = await ctx.prisma.prompt.create({
+        data: {
+          title: input.title,
+          content: input.content,
+          description: input.content.substring(0, 200) + (input.content.length > 200 ? '...' : ''),
+          variables: [],
+          folderId: input.folderId,
+          privacy: 'private',
+          isFavorite: false,
+          userId,
+        },
+        include: {
+          folder: true,
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+      });
+
+      // Create initial version for the copied prompt
+      await ctx.prisma.promptVersion.create({
+        data: {
+          promptId: copiedPrompt.id,
+          versionNumber: 1,
+          title: copiedPrompt.title,
+          content: copiedPrompt.content,
+          variables: [],
+          changesSummary: 'Copied from Prompts.chat',
+          isSnapshot: true,
+          createdBy: userId,
+        },
+      });
+
+      // Log activity
+      await ctx.prisma.activityLog.create({
+        data: {
+          userId,
+          action: 'copied_from_prompts_chat',
+          entityType: 'prompt',
+          entityId: copiedPrompt.id,
+          metadata: {
+            title: copiedPrompt.title,
+            source: 'prompts.chat',
+          },
+        },
+      });
+
+      return copiedPrompt;
+    }),
 });

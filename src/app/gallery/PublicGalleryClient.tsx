@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -40,9 +41,10 @@ export function PublicGalleryClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [targetLlm, setTargetLlm] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "usageCount">("updatedAt");
+  const [includePromptsChat, setIncludePromptsChat] = useState(false);
   const highlightId = searchParams.get('highlight');
   const promptRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  
+
   const isAuthenticated = !!session;
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -60,9 +62,25 @@ export function PublicGalleryClient() {
       }
     );
 
-  const prompts = data?.pages.flatMap((page) => page.items) ?? [];
+  const localPrompts = data?.pages.flatMap((page) => page.items) ?? [];
+
+  // Fetch prompts from prompts.chat if checkbox is checked
+  const { data: promptsChatData, isLoading: isLoadingPromptsChat } = trpc.prompt.getPromptsChat.useQuery(
+    {
+      search: searchQuery || undefined,
+    },
+    {
+      enabled: includePromptsChat,
+    }
+  );
+
+  // Merge prompts from both sources
+  const prompts = includePromptsChat && promptsChatData
+    ? [...localPrompts, ...promptsChatData]
+    : localPrompts;
 
   const recordUsage = trpc.analytics.recordUsage.useMutation();
+  const copyFromPromptsChatMutation = trpc.prompt.copyFromPromptsChat.useMutation();
 
   // Scroll to highlighted prompt when data loads
   useEffect(() => {
@@ -81,15 +99,15 @@ export function PublicGalleryClient() {
     }
   }, [highlightId, prompts]);
 
-  const handleCopyPrompt = async (promptId: string, content: string, title: string) => {
+  const handleCopyPrompt = async (promptId: string, content: string, title: string, isFromPromptsChat?: boolean) => {
     await navigator.clipboard.writeText(content);
     toast({
       title: "Copied to clipboard",
       description: `"${title}" has been copied`,
     });
 
-    // Track usage when copying (only if authenticated)
-    if (isAuthenticated) {
+    // Track usage when copying (only if authenticated and not from prompts.chat)
+    if (isAuthenticated && !isFromPromptsChat) {
       try {
         await recordUsage.mutateAsync({
           promptId,
@@ -102,15 +120,55 @@ export function PublicGalleryClient() {
     }
   };
 
-  const handleViewPrompt = (promptId: string) => {
+  const handleViewPrompt = (promptId: string, isFromPromptsChat?: boolean, title?: string, content?: string) => {
     if (!isAuthenticated) {
       toast({
         title: "Login required",
         description: "Please log in to view full prompt details",
       });
-      router.push(`/auth/login?callbackUrl=/editor/${promptId}`);
+      router.push(`/auth/login?callbackUrl=/gallery`);
+      return;
+    }
+
+    // If it's from prompts.chat, add to library first then navigate to editor
+    if (isFromPromptsChat && title && content) {
+      void handleAddToLibrary(title, content);
     } else {
       router.push(`/editor/${promptId}`);
+    }
+  };
+
+  const handleAddToLibrary = async (title: string, content: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please log in to add prompts to your library",
+      });
+      router.push('/auth/login?callbackUrl=/gallery');
+      return;
+    }
+
+    try {
+      const result = await copyFromPromptsChatMutation.mutateAsync({
+        title,
+        content,
+        folderId: null,
+      });
+
+      toast({
+        title: "Added to library",
+        description: `"${title}" has been added to your library`,
+      });
+
+      // Navigate to the editor with the new prompt
+      router.push(`/editor/${result.id}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add prompt to library",
+        variant: "destructive",
+      });
+      console.error('Failed to add prompt to library:', error);
     }
   };
 
@@ -161,19 +219,20 @@ export function PublicGalleryClient() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
-            <Input
-              type="text"
-              placeholder="Search public prompts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500"
-            />
-          </div>
+        <div className="flex flex-col gap-4 p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
+              <Input
+                type="text"
+                placeholder="Search public prompts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500"
+              />
+            </div>
 
-          <div className="flex gap-2">
+            <div className="flex gap-2">
             <Select value={targetLlm} onValueChange={setTargetLlm}>
               <SelectTrigger className="w-[180px] bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="All LLMs" />
@@ -214,10 +273,38 @@ export function PublicGalleryClient() {
               </SelectContent>
             </Select>
           </div>
+          </div>
+
+          {/* Prompts.chat Integration */}
+          <div className="flex items-center gap-3 pt-2 border-t border-white/10">
+            <Checkbox
+              id="include-prompts-chat"
+              checked={includePromptsChat}
+              onCheckedChange={(checked) => setIncludePromptsChat(checked as boolean)}
+              className="border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+            />
+            <label
+              htmlFor="include-prompts-chat"
+              className="text-sm text-gray-300 cursor-pointer flex items-center gap-2"
+            >
+              <span>Include prompts from</span>
+              <a
+                href="https://prompts.chat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-400 hover:text-purple-300 underline inline-flex items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Prompts.chat
+                <ExternalLink className="h-3 w-3" />
+              </a>
+              <span className="text-gray-500">({promptsChatData?.length || '200+'} prompts)</span>
+            </label>
+          </div>
         </div>
 
         {/* Stats */}
-        {!isLoading && prompts.length > 0 && (
+        {!(isLoading || (includePromptsChat && isLoadingPromptsChat)) && prompts.length > 0 && (
           <div className="flex items-center gap-2 text-sm text-purple-300">
             <Sparkles className="h-4 w-4" />
             <span>Showing {prompts.length} public {prompts.length === 1 ? "prompt" : "prompts"}</span>
@@ -225,7 +312,7 @@ export function PublicGalleryClient() {
         )}
 
         {/* Gallery Grid */}
-        {isLoading ? (
+        {(isLoading || (includePromptsChat && isLoadingPromptsChat)) ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="bg-white/5 backdrop-blur-sm border-white/10">
@@ -255,45 +342,56 @@ export function PublicGalleryClient() {
           </Card>
         ) : (
           <>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {prompts.map((prompt) => {
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-hidden">
+              {prompts.map((prompt: any) => {
                 const isHighlighted = highlightId === prompt.id;
+                const isFromPromptsChat = prompt.source === 'prompts.chat';
+
                 return (
-                  <Card 
-                    key={prompt.id} 
+                  <Card
+                    key={prompt.id}
                     ref={(el) => { promptRefs.current[prompt.id] = el; }}
-                    className={`group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10 ${
+                    className={`group bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10 overflow-hidden ${
                       isHighlighted ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-slate-950 bg-white/15' : ''
                     }`}
                   >
                   <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-lg line-clamp-2 flex-1 text-white">
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <CardTitle className="text-lg line-clamp-2 flex-1 text-white min-w-0 break-words">
                         {prompt.title}
                       </CardTitle>
-                      {prompt.usageCount > 0 && (
-                        <Badge className="gap-1 shrink-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-500/30">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          {prompt.usageCount}
+                      {isFromPromptsChat ? (
+                        <Badge
+                          className="gap-1 shrink-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30"
+                          title="From Prompts.chat"
+                        >
+                          <Globe className="h-3 w-3" />
                         </Badge>
+                      ) : (
+                        prompt.usageCount > 0 && (
+                          <Badge className="gap-1 shrink-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-500/30">
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            {prompt.usageCount}
+                          </Badge>
+                        )
                       )}
                     </div>
                     {prompt.description && (
-                      <CardDescription className="line-clamp-2 text-gray-400">
+                      <CardDescription className="line-clamp-2 text-gray-400 break-words overflow-hidden">
                         {prompt.description}
                       </CardDescription>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Content Preview */}
-                    <div className="rounded-lg bg-black/20 border border-white/5 p-3">
-                      <p className="text-xs font-mono text-gray-300 line-clamp-3">
+                    <div className="rounded-lg bg-black/20 border border-white/5 p-3 overflow-hidden">
+                      <p className="text-xs font-mono text-gray-300 line-clamp-3 break-words">
                         {prompt.content}
                       </p>
                     </div>
 
-                    {/* Tags */}
-                    {prompt.tags.length > 0 && (
+                    {/* Tags - only for local prompts */}
+                    {!isFromPromptsChat && prompt.tags?.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {prompt.tags.slice(0, 3).map((tag: any) => (
                           <Badge key={tag.id} className="text-xs bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30">
@@ -309,50 +407,62 @@ export function PublicGalleryClient() {
                     )}
 
                     {/* Metadata */}
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      <div className="flex items-center gap-1">
-                        {prompt.user.avatarUrl ? (
-                          <div className="relative h-5 w-5 rounded-full overflow-hidden border border-purple-500/30">
-                            <Image
-                              src={prompt.user.avatarUrl}
-                              alt={prompt.user.name ?? prompt.user.email}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-[10px] font-medium text-white">
-                            {prompt.user.name?.[0]?.toUpperCase() ?? prompt.user.email?.[0]?.toUpperCase() ?? "?"}
-                          </div>
-                        )}
-                        <span className="truncate max-w-[120px] text-gray-300">
-                          {prompt.user.name ?? prompt.user.email}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {prompt.targetLlm && (
-                          <Badge className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 border-blue-500/30">
-                            {prompt.targetLlm}
-                          </Badge>
-                        )}
-                        <div className="flex items-center gap-1 text-gray-400">
-                          <MessageSquare className="h-3 w-3" />
-                          <span>{prompt._count?.comments ?? 0}</span>
+                    {isFromPromptsChat ? (
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Globe className="h-4 w-4 text-green-400" />
+                          <span className="text-gray-300 text-xs">Prompts.chat</span>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between text-xs text-gray-400">
+                          <div className="flex items-center gap-1 min-w-0">
+                            {prompt.user.avatarUrl ? (
+                              <div className="relative h-5 w-5 rounded-full overflow-hidden border border-purple-500/30 shrink-0">
+                                <Image
+                                  src={prompt.user.avatarUrl}
+                                  alt={prompt.user.name ?? prompt.user.email}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-[10px] font-medium text-white shrink-0">
+                                {prompt.user.name?.[0]?.toUpperCase() ?? prompt.user.email?.[0]?.toUpperCase() ?? "?"}
+                              </div>
+                            )}
+                            <span className="truncate max-w-[120px] text-gray-300">
+                              {prompt.user.name ?? prompt.user.email}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            {prompt.targetLlm && (
+                              <Badge className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 border-blue-500/30">
+                                {prompt.targetLlm}
+                              </Badge>
+                            )}
+                            <div className="flex items-center gap-1 text-gray-400">
+                              <MessageSquare className="h-3 w-3" />
+                              <span>{prompt._count?.comments ?? 0}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="text-xs text-gray-500">
-                      Updated {formatDistanceToNow(new Date(prompt.updatedAt), { addSuffix: true })}
-                    </div>
+                        <div className="text-xs text-gray-500">
+                          Updated {formatDistanceToNow(new Date(prompt.updatedAt), { addSuffix: true })}
+                        </div>
+                      </>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0" 
+                      <Button
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
                         size="sm"
-                        onClick={() => handleViewPrompt(prompt.id)}
+                        onClick={() => handleViewPrompt(prompt.id, isFromPromptsChat, prompt.title, prompt.content)}
                         aria-label="View prompt details"
+                        disabled={isFromPromptsChat && copyFromPromptsChatMutation.isPending}
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View
@@ -360,7 +470,7 @@ export function PublicGalleryClient() {
                       <Button
                         size="sm"
                         className="bg-white/5 hover:bg-white/10 text-white border-white/10"
-                        onClick={() => void handleCopyPrompt(prompt.id, prompt.content, prompt.title)}
+                        onClick={() => void handleCopyPrompt(prompt.id, prompt.content, prompt.title, isFromPromptsChat)}
                         aria-label="Copy prompt"
                       >
                         <Copy className="h-4 w-4" />
