@@ -542,7 +542,7 @@ describe('promptRouter', () => {
         text: async () => mockCSV,
       });
 
-      const ctx = createMockContext({ authenticated: false });
+      const ctx = createMockContext(null);
       const caller = promptRouter.createCaller(ctx);
 
       const result = await caller.getPromptsChat({});
@@ -562,7 +562,7 @@ describe('promptRouter', () => {
         text: async () => mockCSV,
       });
 
-      const ctx = createMockContext({ authenticated: false });
+      const ctx = createMockContext(null);
       const caller = promptRouter.createCaller(ctx);
 
       const result = await caller.getPromptsChat({ search: 'javascript' });
@@ -577,7 +577,7 @@ describe('promptRouter', () => {
         status: 404,
       });
 
-      const ctx = createMockContext({ authenticated: false });
+      const ctx = createMockContext(null);
       const caller = promptRouter.createCaller(ctx);
 
       await expect(caller.getPromptsChat({})).rejects.toThrow(TRPCError);
@@ -592,7 +592,7 @@ describe('promptRouter', () => {
         text: async () => mockCSV,
       });
 
-      const ctx = createMockContext({ authenticated: false });
+      const ctx = createMockContext(null);
       const caller = promptRouter.createCaller(ctx);
 
       await caller.getPromptsChat({});
@@ -640,7 +640,7 @@ describe('promptRouter', () => {
     });
 
     it('should require authentication', async () => {
-      const ctx = createMockContext({ authenticated: false });
+      const ctx = createMockContext(null);
       const caller = promptRouter.createCaller(ctx);
 
       await expect(
